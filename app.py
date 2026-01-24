@@ -47,7 +47,8 @@ speeds = [df_speed.loc[car, road] for car in cars]
 weighted_speeds = [s * weight for s in speeds]
 prediction = cars[weighted_speeds.index(max(weighted_speeds))]
 
-st.subheader("🔮 Prediction Result")st.success(f"Predicted Winner: **{prediction}**")
+# --- هذا السطر مُفصّل الآن ---st.subheader("🔮 Prediction Result")
+st.success(f"Predicted Winner: **{prediction}**")
 
 st.markdown("---")
 actual_winner = st.selectbox("🏆 Actual Winner", cars)
@@ -95,8 +96,8 @@ if st.session_state.history:
         prob_df['Probability (%)'] = (prob_df['Count'] / prob_df['Total']) * 100
         
         st.dataframe(prob_df.sort_values(by=['Position', 'Road'], ascending=[True, True]), use_container_width=True)
-        
-        fig3 = px.bar(prob_df, x='Position', y='Probability (%)', color='Winner', facet_col='Road', facet_col_wrap=3)        st.plotly_chart(fig3, use_container_width=True)
+                fig3 = px.bar(prob_df, x='Position', y='Probability (%)', color='Winner', facet_col='Road', facet_col_wrap=3)
+        st.plotly_chart(fig3, use_container_width=True)
     
     st.write("📊 Wins by Car per (Position + Road)")
     wins_per_combination = hist_df.groupby(['Position', 'Road', 'Winner']).size().reset_index(name='Wins')
