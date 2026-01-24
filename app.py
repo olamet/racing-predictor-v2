@@ -47,8 +47,7 @@ st.sidebar.markdown("---")
 uploaded_file = st.sidebar.file_uploader("📤 Upload Additional Data (CSV)", type="csv")
 if uploaded_file is not None:
     df_uploaded = pd.read_csv(uploaded_file)
-    # تحويل البيانات إلى قائمة من القوائم    new_records = df_uploaded.to_dict(orient='records')
-    st.session_state.history.extend(new_records)
+    new_records = df_uploaded.to_dict(orient='records')    st.session_state.history.extend(new_records)
     save_history()
     st.sidebar.success(f"Added {len(new_records)} races! Total: {len(st.session_state.history)}")
 
@@ -96,8 +95,8 @@ if st.button("💾 Save This Race"):
     st.success(f"Race saved! Total races: {len(st.session_state.history)}")
 
 # --- Advanced Analytics ---
-if st.session_state.history:    st.markdown("---")
-    st.subheader("📊 Advanced Analytics")
+if st.session_state.history:
+    st.markdown("---")    st.subheader("📊 Advanced Analytics")
     
     hist_df = pd.DataFrame(st.session_state.history)
     
