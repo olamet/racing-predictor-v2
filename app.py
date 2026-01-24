@@ -47,7 +47,7 @@ cars = [car1, car2, car3]
 
 # --- Distance Weighting ---
 weight_map = {"L": 0.8, "C": 1.0, "R": 1.3}
-weight = weight_map[position]speeds = [df_speed.loc[car, road] for car in cars]
+weight = weight_map[position]  # ← هنا تم فصل السطرspeeds = [df_speed.loc[car, road] for car in cars]  # ← هنا تم فصل السطر
 weighted_speeds = [s * weight for s in speeds]
 prediction = cars[weighted_speeds.index(max(weighted_speeds))]
 
