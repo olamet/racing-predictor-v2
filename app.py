@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 import base64
 
 # --- Speed Data ---
@@ -14,9 +15,20 @@ speed_data = {
 }
 df_speed = pd.DataFrame(speed_data).set_index("Vehicle")
 
-# --- Initialize Session State ---
-if 'history' not in st.session_state:
-    st.session_state.history = []
+# --- Load History from CSV ---
+def load_history():
+    try:
+        df = pd.read_csv('racing_history.csv')
+        return df.to_dict('records')
+    except FileNotFoundError:
+        return []
+
+st.session_state.history = load_history()
+
+# --- Save History to CSV ---
+def save_history():
+    df = pd.DataFrame(st.session_state.history)
+    df.to_csv('racing_history.csv', index=False)
 
 # --- Sidebar: Import/Export ---
 st.sidebar.header("📁 Data Management")
@@ -26,20 +38,21 @@ if st.session_state.history:
     df_export = pd.DataFrame(st.session_state.history)
     csv = df_export.to_csv(index=False)
     b64 = base64.b64encode(csv.encode()).decode()
-    href = f'<a href="data:file/csv;base64,{b64}" download="racing_data.csv">📥 Download Data</a>'
+    href = f'<a href="data:file/csv;base64,{b64}" download="racing_data.csv">📥 Download All Data</a>'
     st.sidebar.markdown(href, unsafe_allow_html=True)
 
 # Import Section
 st.sidebar.markdown("---")
-uploaded_file = st.sidebar.file_uploader("📤 Upload Data (CSV)", type="csv")
+uploaded_file = st.sidebar.file_uploader("📤 Upload Additional Data (CSV)", type="csv")
 if uploaded_file is not None:
     df_uploaded = pd.read_csv(uploaded_file)
-    st.session_state.history = df_uploaded.to_dict('records')
-    st.sidebar.success(f"Loaded {len(st.session_state.history)} races!")
+    new_records = df_uploaded.to_dict('records')
+    st.session_state.history.extend(new_records)    save_history()
+    st.sidebar.success(f"Added {len(new_records)} races! Total: {len(st.session_state.history)}")
 
 # --- Title ---
-st.title("🏎️ Racing Predictor Pro")
-st.markdown("Smart predictions with data persistence!")
+st.title("🏎️ Racing Predictor Pro v3")
+st.markdown("Smart predictions powered by your historical data!")
 
 # --- Input Section ---
 col1, col2 = st.columns(2)
@@ -76,8 +89,55 @@ if st.button("💾 Save This Race"):
         "Car3": car3,
         "Winner": actual_winner
     })
+    save_history()
     st.balloons()
-    st.success("Race saved!")
+    st.success(f"Race saved! Total races: {len(st.session_state.history)}")
+
+# --- Advanced Analytics ---
+if st.session_state.history:
+    st.markdown("---")
+    st.subheader("📊 Advanced Analytics")    
+    hist_df = pd.DataFrame(st.session_state.history)
+    
+    # Win Count by Car
+    wins_by_car = hist_df['Winner'].value_counts().reset_index()
+    wins_by_car.columns = ['Car', 'Wins']
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("🏆 Total Wins by Car")
+        fig1 = px.pie(wins_by_car, values='Wins', names='Car', hole=0.3)
+        st.plotly_chart(fig1, use_container_width=True)
+    
+    with col2:
+        st.write("📍 Wins by Position")
+        wins_by_pos = hist_df.groupby(['Position', 'Winner']).size().reset_index(name='Count')
+        fig2 = px.bar(wins_by_pos, x='Position', y='Count', color='Winner', barmode='group')
+        st.plotly_chart(fig2, use_container_width=True)
+    
+    # Win Probability by (Position + Road)
+    st.write("📈 Win Probability by (Position + Road)")
+    if not hist_df.empty:
+        # Group by Position and Road
+        grouped = hist_df.groupby(['Position', 'Road', 'Winner']).size().reset_index(name='Count')
+        total_per_group = grouped.groupby(['Position', 'Road'])['Count'].sum().reset_index()
+        total_per_group.rename(columns={'Count': 'Total'}, inplace=True)
+        
+        # Merge to calculate probability
+        prob_df = grouped.merge(total_per_group, on=['Position', 'Road'])
+        prob_df['Probability (%)'] = (prob_df['Count'] / prob_df['Total']) * 100
+        
+        # Show table
+        st.dataframe(prob_df.sort_values(by=['Position', 'Road'], ascending=[True, True]), use_container_width=True)
+        
+        # Plot
+        fig3 = px.bar(prob_df, x='Position', y='Probability (%)', color='Winner', facet_col='Road', facet_col_wrap=3)
+        st.plotly_chart(fig3, use_container_width=True)
+    
+    # Win Count by Car per (Position + Road)
+    st.write("📊 Wins by Car per (Position + Road)")
+    wins_per_combination = hist_df.groupby(['Position', 'Road', 'Winner']).size().reset_index(name='Wins')
+    st.dataframe(wins_per_combination.sort_values(by=['Position', 'Road'], ascending=[True, True]), use_container_width=True)
 
 # --- Show History ---
 if st.session_state.history:
