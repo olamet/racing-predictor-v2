@@ -47,9 +47,8 @@ st.sidebar.markdown("---")
 uploaded_file = st.sidebar.file_uploader("📤 Upload Additional Data (CSV)", type="csv")
 if uploaded_file is not None:
     df_uploaded = pd.read_csv(uploaded_file)
-    new_records = df_uploaded.to_dict('records')    # دمج البيانات الجديدة مع القديمة
-    st.session_state.history.extend(new_records)
-    save_history()  # حفظ التغييرات فورًا
+    new_records = df_uploaded.to_dict('records')    st.session_state.history.extend(new_records)
+    save_history()
     st.sidebar.success(f"Added {len(new_records)} races! Total: {len(st.session_state.history)}")
 
 # --- Title ---
@@ -91,13 +90,13 @@ if st.button("💾 Save This Race"):
         "Car3": car3,
         "Winner": actual_winner
     })
-    save_history()  # حفظ التغييرات فورًا
+    save_history()
     st.balloons()
     st.success(f"Race saved! Total races: {len(st.session_state.history)}")
 
 # --- Advanced Analytics ---
-if st.session_state.history:    st.markdown("---")
-    st.subheader("📊 Advanced Analytics")
+if st.session_state.history:
+    st.markdown("---")    st.subheader("📊 Advanced Analytics")
     
     hist_df = pd.DataFrame(st.session_state.history)
     
@@ -120,19 +119,15 @@ if st.session_state.history:    st.markdown("---")
     # Win Probability by (Position + Road)
     st.write("📈 Win Probability by (Position + Road)")
     if not hist_df.empty:
-        # Group by Position and Road
         grouped = hist_df.groupby(['Position', 'Road', 'Winner']).size().reset_index(name='Count')
         total_per_group = grouped.groupby(['Position', 'Road'])['Count'].sum().reset_index()
         total_per_group.rename(columns={'Count': 'Total'}, inplace=True)
         
-        # Merge to calculate probability
         prob_df = grouped.merge(total_per_group, on=['Position', 'Road'])
         prob_df['Probability (%)'] = (prob_df['Count'] / prob_df['Total']) * 100
         
-        # Show table
         st.dataframe(prob_df.sort_values(by=['Position', 'Road'], ascending=[True, True]), use_container_width=True)
         
-        # Plot
         fig3 = px.bar(prob_df, x='Position', y='Probability (%)', color='Winner', facet_col='Road', facet_col_wrap=3)
         st.plotly_chart(fig3, use_container_width=True)
     
