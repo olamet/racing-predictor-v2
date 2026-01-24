@@ -23,7 +23,8 @@ def load_history():
     except FileNotFoundError:
         return []
 
-st.session_state.history = load_history()
+if 'history' not in st.session_state:
+    st.session_state.history = load_history()
 
 # --- Save History to CSV ---
 def save_history():
@@ -46,8 +47,9 @@ st.sidebar.markdown("---")
 uploaded_file = st.sidebar.file_uploader("📤 Upload Additional Data (CSV)", type="csv")
 if uploaded_file is not None:
     df_uploaded = pd.read_csv(uploaded_file)
-    new_records = df_uploaded.to_dict('records')
-    st.session_state.history.extend(new_records)    save_history()
+    new_records = df_uploaded.to_dict('records')    # دمج البيانات الجديدة مع القديمة
+    st.session_state.history.extend(new_records)
+    save_history()  # حفظ التغييرات فورًا
     st.sidebar.success(f"Added {len(new_records)} races! Total: {len(st.session_state.history)}")
 
 # --- Title ---
@@ -89,14 +91,14 @@ if st.button("💾 Save This Race"):
         "Car3": car3,
         "Winner": actual_winner
     })
-    save_history()
+    save_history()  # حفظ التغييرات فورًا
     st.balloons()
     st.success(f"Race saved! Total races: {len(st.session_state.history)}")
 
 # --- Advanced Analytics ---
-if st.session_state.history:
-    st.markdown("---")
-    st.subheader("📊 Advanced Analytics")    
+if st.session_state.history:    st.markdown("---")
+    st.subheader("📊 Advanced Analytics")
+    
     hist_df = pd.DataFrame(st.session_state.history)
     
     # Win Count by Car
