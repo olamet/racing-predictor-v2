@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# --- Speed Data ---
 speed_data = {
     "Vehicle": ["Car", "Sport", "Super", "Bigbike", "Moto", "ORV", "SUV", "Truck", "ATV"],
     "expressway": [264, 432, 480, 264, 220.8, 286, 348, 240, 115.2],
@@ -14,7 +13,6 @@ speed_data = {
 }
 df_speed = pd.DataFrame(speed_data).set_index("Vehicle")
 
-# --- Load History from CSV ---
 def load_history():
     try:
         df = pd.read_csv('racing_history.csv')
@@ -25,7 +23,6 @@ def load_history():
 if 'history' not in st.session_state:
     st.session_state.history = load_history()
 
-# --- Save History to CSV ---
 def save_history():
     df = pd.DataFrame(st.session_state.history)
     df.to_csv('racing_history.csv', index=False)
@@ -33,7 +30,6 @@ def save_history():
 st.title("🏎️ Racing Predictor Pro")
 st.markdown("Advanced analytics with permanent data storage!")
 
-# --- Input Section ---
 col1, col2 = st.columns(2)
 with col1:
     position = st.selectbox("📍 Visible Road Position", ["L", "C", "R"])
@@ -45,17 +41,14 @@ with col2:
 
 cars = [car1, car2, car3]
 
-# --- Distance Weighting ---
 weight_map = {"L": 0.8, "C": 1.0, "R": 1.3}
-weight = weight_map[position]  # ← هنا تم فصل السطرspeeds = [df_speed.loc[car, road] for car in cars]  # ← هنا تم فصل السطر
+weight = weight_map[position]
+speeds = [df_speed.loc[car, road] for car in cars]
 weighted_speeds = [s * weight for s in speeds]
 prediction = cars[weighted_speeds.index(max(weighted_speeds))]
 
-# --- Display Prediction ---
-st.subheader("🔮 Prediction Result")
-st.success(f"Predicted Winner: **{prediction}**")
+st.subheader("🔮 Prediction Result")st.success(f"Predicted Winner: **{prediction}**")
 
-# --- Save Actual Result ---
 st.markdown("---")
 actual_winner = st.selectbox("🏆 Actual Winner", cars)
 if st.button("💾 Save This Race"):
@@ -71,14 +64,12 @@ if st.button("💾 Save This Race"):
     st.balloons()
     st.success(f"Race saved! Total races: {len(st.session_state.history)}")
 
-# --- Advanced Analytics ---
 if st.session_state.history:
     st.markdown("---")
     st.subheader("📊 Advanced Analytics")
     
     hist_df = pd.DataFrame(st.session_state.history)
     
-    # Win Count by Car
     wins_by_car = hist_df['Winner'].value_counts().reset_index()
     wins_by_car.columns = ['Car', 'Wins']
     
@@ -94,9 +85,9 @@ if st.session_state.history:
         fig2 = px.bar(wins_by_pos, x='Position', y='Count', color='Winner', barmode='group')
         st.plotly_chart(fig2, use_container_width=True)
     
-    # Win Probability by (Position + Road)
     st.write("📈 Win Probability by (Position + Road)")
-    if not hist_df.empty:        grouped = hist_df.groupby(['Position', 'Road', 'Winner']).size().reset_index(name='Count')
+    if not hist_df.empty:
+        grouped = hist_df.groupby(['Position', 'Road', 'Winner']).size().reset_index(name='Count')
         total_per_group = grouped.groupby(['Position', 'Road'])['Count'].sum().reset_index()
         total_per_group.rename(columns={'Count': 'Total'}, inplace=True)
         
@@ -105,15 +96,12 @@ if st.session_state.history:
         
         st.dataframe(prob_df.sort_values(by=['Position', 'Road'], ascending=[True, True]), use_container_width=True)
         
-        fig3 = px.bar(prob_df, x='Position', y='Probability (%)', color='Winner', facet_col='Road', facet_col_wrap=3)
-        st.plotly_chart(fig3, use_container_width=True)
+        fig3 = px.bar(prob_df, x='Position', y='Probability (%)', color='Winner', facet_col='Road', facet_col_wrap=3)        st.plotly_chart(fig3, use_container_width=True)
     
-    # Win Count by Car per (Position + Road)
     st.write("📊 Wins by Car per (Position + Road)")
     wins_per_combination = hist_df.groupby(['Position', 'Road', 'Winner']).size().reset_index(name='Wins')
     st.dataframe(wins_per_combination.sort_values(by=['Position', 'Road'], ascending=[True, True]), use_container_width=True)
 
-# --- Show History ---
 if st.session_state.history:
     st.markdown("---")
     st.subheader("📜 Your Race History")
