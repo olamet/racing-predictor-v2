@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-# Speed Data
+# --- Speed Data ---
 speed_data = {
     "Vehicle": ["Car", "Sport", "Super", "Bigbike", "Moto", "ORV", "SUV", "Truck", "ATV"],
     "expressway": [264, 432, 480, 264, 220.8, 286, 348, 240, 115.2],
@@ -13,39 +13,56 @@ speed_data = {
 }
 df_speed = pd.DataFrame(speed_data).set_index("Vehicle")
 
-# Initialize history
+# --- Initialize Session State ---
 if 'history' not in st.session_state:
     st.session_state.history = []
 
-# Title
-st.title("🏎️ Racing Predictor")
-st.write("Enter race details:")
+# --- Title ---
+st.title("🏎️ Racing Predictor Pro")
+st.markdown("Smart predictions with distance weighting!")
 
-# Input
-position = st.selectbox("Position", ["L", "C", "R"])
-road = st.selectbox("Road Type", list(df_speed.columns))
-car1 = st.selectbox("Car 1", df_speed.index.tolist())
-car2 = st.selectbox("Car 2", df_speed.index.tolist())
-car3 = st.selectbox("Car 3", df_speed.index.tolist())
+# --- Input Section ---
+col1, col2 = st.columns(2)
+with col1:
+    position = st.selectbox("📍 Visible Road Position", ["L", "C", "R"])
+    road = st.selectbox("🛣️ Visible Road Type", list(df_speed.columns))
+with col2:
+    car1 = st.selectbox("🚗 Car 1", df_speed.index.tolist())
+    car2 = st.selectbox("🚗 Car 2", df_speed.index.tolist())
+    car3 = st.selectbox("🚗 Car 3", df_speed.index.tolist())
 
 cars = [car1, car2, car3]
+
+# --- Distance Weighting ---
+weight_map = {"L": 0.8, "C": 1.0, "R": 1.3}
+weight = weight_map[position]
+
+# --- Speed-Based Prediction (with weight) ---
 speeds = [df_speed.loc[car, road] for car in cars]
-prediction = cars[speeds.index(max(speeds))]
+weighted_speeds = [s * weight for s in speeds]
+fastest_by_weighted_speed = cars[weighted_speeds.index(max(weighted_speeds))]
 
-st.subheader(f"Predicted Winner: {prediction}")
+# --- Display Prediction ---
+st.subheader("🔮 Prediction Result")
+st.success(f"Predicted Winner: **{fastest_by_weighted_speed}** (Weighted by position)")
 
-# Save result
-winner = st.selectbox("Actual Winner", cars)
-if st.button("Save Race"):
+# --- Save Actual Result ---
+st.markdown("---")
+actual_winner = st.selectbox("🏆 Actual Winner", cars)
+if st.button("💾 Save This Race"):
     st.session_state.history.append({
         "Position": position,
         "Road": road,
-        "Cars": f"{car1},{car2},{car3}",
-        "Winner": winner
+        "Car1": car1,
+        "Car2": car2,
+        "Car3": car3,
+        "Winner": actual_winner
     })
-    st.success("Saved!")
+    st.balloons()
+    st.success("Race saved successfully!")
 
-# Show history
+# --- Show History ---
 if st.session_state.history:
-    st.write("History:")
+    st.markdown("---")
+    st.subheader("📜 Your Race History")
     st.dataframe(pd.DataFrame(st.session_state.history))
