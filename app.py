@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import base64
 
 # --- Speed Data ---
 speed_data = {
@@ -17,9 +18,28 @@ df_speed = pd.DataFrame(speed_data).set_index("Vehicle")
 if 'history' not in st.session_state:
     st.session_state.history = []
 
+# --- Sidebar: Import/Export ---
+st.sidebar.header("📁 Data Management")
+
+# Export Button
+if st.session_state.history:
+    df_export = pd.DataFrame(st.session_state.history)
+    csv = df_export.to_csv(index=False)
+    b64 = base64.b64encode(csv.encode()).decode()
+    href = f'<a href="data:file/csv;base64,{b64}" download="racing_data.csv">📥 Download Data</a>'
+    st.sidebar.markdown(href, unsafe_allow_html=True)
+
+# Import Section
+st.sidebar.markdown("---")
+uploaded_file = st.sidebar.file_uploader("📤 Upload Data (CSV)", type="csv")
+if uploaded_file is not None:
+    df_uploaded = pd.read_csv(uploaded_file)
+    st.session_state.history = df_uploaded.to_dict('records')
+    st.sidebar.success(f"Loaded {len(st.session_state.history)} races!")
+
 # --- Title ---
 st.title("🏎️ Racing Predictor Pro")
-st.markdown("Smart predictions with distance weighting!")
+st.markdown("Smart predictions with data persistence!")
 
 # --- Input Section ---
 col1, col2 = st.columns(2)
@@ -36,15 +56,13 @@ cars = [car1, car2, car3]
 # --- Distance Weighting ---
 weight_map = {"L": 0.8, "C": 1.0, "R": 1.3}
 weight = weight_map[position]
-
-# --- Speed-Based Prediction (with weight) ---
 speeds = [df_speed.loc[car, road] for car in cars]
 weighted_speeds = [s * weight for s in speeds]
-fastest_by_weighted_speed = cars[weighted_speeds.index(max(weighted_speeds))]
+prediction = cars[weighted_speeds.index(max(weighted_speeds))]
 
 # --- Display Prediction ---
 st.subheader("🔮 Prediction Result")
-st.success(f"Predicted Winner: **{fastest_by_weighted_speed}** (Weighted by position)")
+st.success(f"Predicted Winner: **{prediction}**")
 
 # --- Save Actual Result ---
 st.markdown("---")
@@ -59,7 +77,7 @@ if st.button("💾 Save This Race"):
         "Winner": actual_winner
     })
     st.balloons()
-    st.success("Race saved successfully!")
+    st.success("Race saved!")
 
 # --- Show History ---
 if st.session_state.history:
