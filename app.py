@@ -96,7 +96,8 @@ with col2:
     st.info(f"By Exact History:\n{prediction_by_history}")
 
 st.markdown("---")
-actual_winner = st.selectbox("Actual Winner", cars)if st.button("Save This Race"):
+actual_winner = st.selectbox("Actual Winner", cars)
+if st.button("Save This Race"):
     st.session_state.history.append({
         "Position": position,
         "Road": road,
