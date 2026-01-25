@@ -96,14 +96,13 @@ if st.session_state.history:
             total_per_group = grouped.groupby(['Position', 'Road'])['Count'].sum().reset_index()
             total_per_group.rename(columns={'Count': 'Total'}, inplace=True)
             
-            prob_df = grouped.merge(total_per_group, on=['Position', 'Road'])
             prob_df['Probability (%)'] = (prob_df['Count'] / prob_df['Total']) * 100
-                        st.dataframe(prob_df.sort_values(by=['Position', 'Road'], ascending=[True, True]), use_container_width=True)
             
-            # تم إزالة الرسم البياني المعقد الذي يسبب أخطاء المسافات
-            # استبداله بعرض البيانات كجدول بسيط
-            st.write("Detailed probabilities shown in table above")
-
+            st.dataframe(prob_df.sort_values(by=['Position', 'Road'], ascending=[True, True]), use_container_width=True)
+            
+            st.write("📊 Detailed probabilities are shown in the table above")
+    
+    st.write("Wins by Car per (Position + Road)")
     st.write("Wins by Car per (Position + Road)")
     wins_per_combination = hist_df.groupby(['Position', 'Road', 'Winner']).size().reset_index(name='Wins')
     if not wins_per_combination.empty:
