@@ -97,7 +97,7 @@ if st.session_state.history:
             
             prob_df = grouped.merge(total_per_group, on=['Position', 'Road'])
             prob_df['Probability (%)'] = (prob_df['Count'] / prob_df['Total']) * 100
-            st.dataframe(prob_df.sort_values(by=['Position', 'Road'], ascending=[True, True]), use_container_width=True)
+                        st.dataframe(prob_df.sort_values(by=['Position', 'Road'], ascending=[True, True]), use_container_width=True)
             
             # تم إزالة الرسم البياني المعقد الذي يسبب أخطاء المسافات
             # استبداله بعرض البيانات كجدول بسيط
