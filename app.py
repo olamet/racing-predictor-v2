@@ -47,8 +47,7 @@ speeds = [df_speed.loc[car, road] for car in cars]
 weighted_speeds = [s * weight for s in speeds]
 prediction = cars[weighted_speeds.index(max(weighted_speeds))]
 
-st.subheader("Prediction Result")
-st.success(f"Predicted Winner: {prediction}")
+st.subheader("Prediction Result")st.success(f"Predicted Winner: {prediction}")
 
 st.markdown("---")
 actual_winner = st.selectbox("Actual Winner", cars)
