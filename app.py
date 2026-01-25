@@ -65,13 +65,11 @@ for car in cars:
 
 prediction_by_speed = cars[combined_speeds.index(max(combined_speeds))]
 
-# EXACT HISTORICAL MATCHING
-prediction_by_history = cars[0]  # Default
+prediction_by_history = cars[0]
 
 if st.session_state.history:
     hist_df = pd.DataFrame(st.session_state.history)
     
-    # Filter EXACT matching races (same position, road, AND car order)
     exact_matches = hist_df[
         (hist_df['Position'] == position) &
         (hist_df['Road'] == road) &
@@ -81,29 +79,24 @@ if st.session_state.history:
     ]
     
     if not exact_matches.empty:
-        # Count wins for each car in THIS EXACT setup
         win_counts = exact_matches['Winner'].value_counts()
-        
-        # Only consider winners that are in current race
         valid_winners = win_counts[win_counts.index.isin(cars)]
         
         if not valid_winners.empty:
             prediction_by_history = valid_winners.idxmax()
         else:
-            # If no valid winners, use the most frequent winner overall
             prediction_by_history = exact_matches['Winner'].mode().iloc[0]
     else:
-        # If no exact matches, fall back to combined speed prediction
         prediction_by_history = prediction_by_speed
 
-col1, col2 = st.columns(2)with col1:
+col1, col2 = st.columns(2)
+with col1:
     st.success(f"By Combined Speed:\n{prediction_by_speed}")
 with col2:
     st.info(f"By Exact History:\n{prediction_by_history}")
 
 st.markdown("---")
-actual_winner = st.selectbox("Actual Winner", cars)
-if st.button("Save This Race"):
+actual_winner = st.selectbox("Actual Winner", cars)if st.button("Save This Race"):
     st.session_state.history.append({
         "Position": position,
         "Road": road,
