@@ -25,10 +25,8 @@ def save_history():
     df = pd.DataFrame(st.session_state.history)
     df.to_csv('racing_history.csv', index=False)
 
-# --- إضافة الشريط الجانبي ---
 page = st.sidebar.radio("اختر الصفحة", ["الرئيسية", "📊 نسبة الربح"])
 
-# --- الصفحة الرئيسية ---
 if page == "الرئيسية":
     st.title("Racing Predictor Pro")
     st.markdown("التوقعات الدقيقة مع حساب الربحية")
@@ -47,9 +45,9 @@ if page == "الرئيسية":
     st.markdown("---")
     st.subheader("Dual Predictions")
     
-    hidden_roads_map = {        "expressway": ["highway", "bumpy"],
-        "highway": ["expressway", "dirt"],
-        "dirt": ["potholes", "desert"],
+    hidden_roads_map = {
+        "expressway": ["highway", "bumpy"],
+        "highway": ["expressway", "dirt"],        "dirt": ["potholes", "desert"],
         "potholes": ["dirt", "bumpy"],
         "bumpy": ["highway", "potholes"],
         "desert": ["dirt", "potholes"]
@@ -95,11 +93,10 @@ if page == "الرئيسية":
             prediction_by_history = prediction_by_speed
     
     col1, col2 = st.columns(2)
-      with col1:
+    with col1:
         st.success(f"By Combined Speed:\n{prediction_by_speed}")
-      with col2:
-        st.info(f"By Exact History:\n{prediction_by_history}")
-    
+    with col2:
+        st.info(f"By Exact History:\n{prediction_by_history}")    
     st.markdown("---")
     actual_winner = st.selectbox("Actual Winner", cars)
     if st.button("Save This Race"):
@@ -120,7 +117,6 @@ if page == "الرئيسية":
         st.subheader("Race History")
         st.dataframe(pd.DataFrame(st.session_state.history))
 
-# --- صفحة الإحصائيات ---
 elif page == "📊 نسبة الربح":
     st.title("📊 نسبة ربح التوقعات")
     
@@ -129,37 +125,52 @@ elif page == "📊 نسبة الربح":
     else:
         hist_df = pd.DataFrame(st.session_state.history)
         
-        # تحضير البيانات
-        speed_data_dict = {k: v for k, v in zip(speed_data["Vehicle"], zip(*[speed_data[col] for col in speed_data if col != "Vehicle"]))}
+        speed_data_dict = {}
+        for i, vehicle in enumerate(speed_data["Vehicle"]):
+            speed_data_dict[vehicle] = [
+                speed_data["expressway"][i],
+                speed_data["highway"][i],
+                speed_data["dirt"][i],
+                speed_data["potholes"][i],
+                speed_data["bumpy"][i],
+                speed_data["desert"][i]
+            ]
         
-        correct_speed = 0
-        correct_history = 0
+        road_index = {
+            "expressway": 0,
+            "highway": 1,
+            "dirt": 2,
+            "potholes": 3,
+            "bumpy": 4,
+            "desert": 5
+        }
+        
+        correct_speed = 0        correct_history = 0
         total_races = len(hist_df)
         
         for idx, row in hist_df.iterrows():
             cars = [row['Car1'], row['Car2'], row['Car3']]
             
-            # --- حساب توقع السرعة ---
             weight = {"L": 0.8, "C": 1.0, "R": 1.3}[row['Position']]
             hidden_roads = {
                 "expressway": ["highway", "bumpy"],
                 "highway": ["expressway", "dirt"],
                 "dirt": ["potholes", "desert"],
                 "potholes": ["dirt", "bumpy"],
-                "bumpy": ["highway", "potholes"],                "desert": ["dirt", "potholes"]
+                "bumpy": ["highway", "potholes"],
+                "desert": ["dirt", "potholes"]
             }.get(row['Road'], ["dirt", "potholes"])
             
             combined_speeds = []
             for car in cars:
-                visible_speed = speed_data_dict[car][list(speed_data.keys()).index(row['Road'])-1] * weight
-                hidden_speed1 = speed_data_dict[car][list(speed_data.keys()).index(hidden_roads[0])-1]
-                hidden_speed2 = speed_data_dict[car][list(speed_data.keys()).index(hidden_roads[1])-1]
+                visible_speed = speed_data_dict[car][road_index[row['Road']]] * weight
+                hidden_speed1 = speed_data_dict[car][road_index[hidden_roads[0]]]
+                hidden_speed2 = speed_data_dict[car][road_index[hidden_roads[1]]]
                 combined_speed = (visible_speed * 0.6) + (hidden_speed1 * 0.2) + (hidden_speed2 * 0.2)
                 combined_speeds.append(combined_speed)
             
             prediction_speed = cars[combined_speeds.index(max(combined_speeds))]
             
-            # --- حساب توقع التاريخ ---
             exact_matches = hist_df[
                 (hist_df['Position'] == row['Position']) &
                 (hist_df['Road'] == row['Road']) &
@@ -175,18 +186,15 @@ elif page == "📊 نسبة الربح":
                 if not valid_winners.empty:
                     prediction_history = valid_winners.idxmax()
             
-            # --- التحقق من الصحة ---
             actual = row['Winner']
             if prediction_speed == actual:
                 correct_speed += 1
             if prediction_history == actual:
                 correct_history += 1
         
-        # --- عرض النتائج ---
         col1, col2 = st.columns(2)
         with col1:
-            accuracy_speed = (correct_speed / total_races) * 100
-            st.metric("النجاح بالسرعة", f"{accuracy_speed:.1f}%")
+            accuracy_speed = (correct_speed / total_races) * 100            st.metric("النجاح بالسرعة", f"{accuracy_speed:.1f}%")
             st.progress(accuracy_speed / 100)
         
         with col2:
@@ -195,10 +203,10 @@ elif page == "📊 نسبة الربح":
             st.progress(accuracy_history / 100)
         
         st.markdown("---")
-        st.subheader("التفاصيل")        st.write(f"✅ توقعات السرعة الصحيحة: {correct_speed}/{total_races}")
+        st.subheader("التفاصيل")
+        st.write(f"✅ توقعات السرعة الصحيحة: {correct_speed}/{total_races}")
         st.write(f"✅ توقعات التاريخ الصحيحة: {correct_history}/{total_races}")
         
-        # مخطط مقارنة بسيط
         comparison_df = pd.DataFrame({
             "النوع": ["التوقع بالسرعة", "التوقع التاريخي"],
             "النسبة": [accuracy_speed, accuracy_history]
