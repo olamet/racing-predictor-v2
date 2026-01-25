@@ -145,7 +145,8 @@ elif page == "📊 نسبة الربح":
             "desert": 5
         }
         
-        correct_speed = 0        correct_history = 0
+        correct_speed = 0
+        correct_history = 0
         total_races = len(hist_df)
         
         for idx, row in hist_df.iterrows():
