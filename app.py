@@ -195,7 +195,8 @@ elif page == "📊 نسبة الربح":
         
         col1, col2 = st.columns(2)
         with col1:
-            accuracy_speed = (correct_speed / total_races) * 100            st.metric("النجاح بالسرعة", f"{accuracy_speed:.1f}%")
+            accuracy_speed = (correct_speed / total_races) * 100
+            st.metric("النجاح بالسرعة", f"{accuracy_speed:.1f}%")
             st.progress(accuracy_speed / 100)
         
         with col2:
