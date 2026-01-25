@@ -190,7 +190,8 @@ elif page == "نسبة الربح":
                         "desert": ["dirt", "potholes"]
                     }.get(road, ["dirt", "potholes"])
                     
-                    combined_speeds = []                    for car in cars:
+                    combined_speeds = []
+                    for car in cars:
                         visible_speed = speed_data_dict[car][road_index[road]] * weight
                         hidden_speed1 = speed_data_dict[car][road_index[hidden_roads[0]]]
                         hidden_speed2 = speed_data_dict[car][road_index[hidden_roads[1]]]
