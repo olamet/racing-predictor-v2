@@ -101,7 +101,7 @@ if st.session_state.history:
             
         if not prob_df.empty:
            fig3 = px.bar(prob_df, x='Position', y='Probability (%)', color='Winner', facet_col='Road', facet_col_wrap=3)
-                st.plotly_chart(fig3, use_container_width=True)
+           st.plotly_chart(fig3, use_container_width=True)
     
     st.write("Wins by Car per (Position + Road)")
     wins_per_combination = hist_df.groupby(['Position', 'Road', 'Winner']).size().reset_index(name='Wins')
