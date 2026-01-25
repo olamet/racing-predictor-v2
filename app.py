@@ -95,9 +95,9 @@ if page == "الرئيسية":
             prediction_by_history = prediction_by_speed
     
     col1, col2 = st.columns(2)
-      with col1:
+       with col1:
         st.success(f"By Combined Speed:\n{prediction_by_speed}")
-      with col2:
+       with col2:
         st.info(f"By Exact History:\n{prediction_by_history}")
     
     st.markdown("---")
