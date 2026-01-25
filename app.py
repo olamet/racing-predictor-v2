@@ -96,7 +96,8 @@ if page == "الرئيسية":
                 combined_speeds.append(combined_speed)
             
             prediction = cars[combined_speeds.index(max(combined_speeds))]
-            prediction_method = "⚡ المدمج (السرعة + التاريخ)"    else:
+            prediction_method = "⚡ المدمج (السرعة + التاريخ)"
+        else:
         # 4. الاعتماد على السرعة عند نقص البيانات
         combined_speeds = []
         for car in cars:
