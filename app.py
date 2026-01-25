@@ -80,7 +80,7 @@ if st.session_state.history:
     
     if not similar_races.empty:
         most_common_winner = similar_races['Winner'].mode().iloc[0]
-            prediction_by_history = most_common_winner
+        prediction_by_history = most_common_winner
 
 col1, col2 = st.columns(2)
 with col1:
@@ -96,8 +96,7 @@ if st.button("Save This Race"):
         "Road": road,
         "Car1": car1,
         "Car2": car2,
-        "Car3": car3,        "Winner": actual_winner
-    })
+        "Car3": car3,        "Winner": actual_winner})
     save_history()
     st.balloons()
     st.success(f"Race saved! Total: {len(st.session_state.history)}")
