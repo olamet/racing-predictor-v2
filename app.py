@@ -30,7 +30,7 @@ def save_history():
     df.to_csv('racing_history.csv', index=False)
 
 st.title("🏎️ Racing Predictor Pro")
-st.markdown("Phase 1: Dual Prediction System")
+st.markdown("Phase 1: Dual Prediction System (Cars Limited to Current Race)")
 
 # --- Input Section ---
 col1, col2 = st.columns(2)
@@ -77,11 +77,13 @@ for car in cars:
 
 prediction_by_speed = cars[combined_speeds.index(max(combined_speeds))]
 
-# Step 3: Simple historical prediction
-prediction_by_history = "Car"  # Default
+# Step 3: Historical prediction (limited to current cars only)
+prediction_by_history = cars[0]  # Default to first car
+
 if st.session_state.history:
-    # Find most common winner in similar conditions
     hist_df = pd.DataFrame(st.session_state.history)
+    
+    # Filter races with the same 3 cars (any order)
     similar_races = hist_df[
         (hist_df['Road'] == road) & 
         (hist_df['Position'] == position) &
@@ -90,13 +92,16 @@ if st.session_state.history:
         (hist_df['Car3'].isin(cars))
     ]
     
+    # Ensure winner is one of the current 3 cars
+    similar_races = similar_races[similar_races['Winner'].isin(cars)]
+    
     if not similar_races.empty:
-        most_common_winner = similar_races['Winner'].mode().iloc[0]
-        prediction_by_history = most_common_winner
+        most_common_winner = similar_races['Winner'].mode().iloc[0]        prediction_by_history = most_common_winner
 
 # --- Display Both Predictions ---
 col1, col2 = st.columns(2)
-with col1:    st.success(f"📊 **By Combined Speed:**\n{prediction_by_speed}")
+with col1:
+    st.success(f"📊 **By Combined Speed:**\n{prediction_by_speed}")
 with col2:
     st.info(f"📈 **By History:**\n{prediction_by_history}")
 
