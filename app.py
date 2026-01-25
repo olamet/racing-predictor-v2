@@ -97,7 +97,7 @@ if st.session_state.history:
             
             prob_df = grouped.merge(total_per_group, on=['Position', 'Road'])
             prob_df['Probability (%)'] = (prob_df['Count'] / prob_df['Total']) * 100
-            st.dataframe(prob_df.sort_values(by=['Position', 'Road'], ascending=[True, True]), use_container_width=True)
+        st.dataframe(prob_df.sort_values(by=['Position', 'Road'], ascending=[True, True]), use_container_width=True)
             
             if not prob_df.empty:
                 fig3 = px.bar(prob_df, x='Position', y='Probability (%)', color='Winner', facet_col='Road', facet_col_wrap=3)
