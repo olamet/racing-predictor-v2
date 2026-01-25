@@ -27,7 +27,7 @@ def save_history():
     df.to_csv('racing_history.csv', index=False)
 
 st.title("Racing Predictor Pro")
-st.markdown("Dual predictions limited to current cars only")
+st.markdown("Exact matching historical predictions")
 
 col1, col2 = st.columns(2)
 with col1:
@@ -65,28 +65,41 @@ for car in cars:
 
 prediction_by_speed = cars[combined_speeds.index(max(combined_speeds))]
 
-prediction_by_history = cars[0]
+# EXACT HISTORICAL MATCHING
+prediction_by_history = cars[0]  # Default
 
 if st.session_state.history:
     hist_df = pd.DataFrame(st.session_state.history)
-    similar_races = hist_df[
-        (hist_df['Road'] == road) & 
-        (hist_df['Position'] == position) &
-        (hist_df['Car1'].isin(cars)) &
-        (hist_df['Car2'].isin(cars)) &
-        (hist_df['Car3'].isin(cars))
-    ]
-    similar_races = similar_races[similar_races['Winner'].isin(cars)]
     
-    if not similar_races.empty:
-        most_common_winner = similar_races['Winner'].mode().iloc[0]
-        prediction_by_history = most_common_winner
+    # Filter EXACT matching races (same position, road, AND car order)
+    exact_matches = hist_df[
+        (hist_df['Position'] == position) &
+        (hist_df['Road'] == road) &
+        (hist_df['Car1'] == car1) &
+        (hist_df['Car2'] == car2) &
+        (hist_df['Car3'] == car3)
+    ]
+    
+    if not exact_matches.empty:
+        # Count wins for each car in THIS EXACT setup
+        win_counts = exact_matches['Winner'].value_counts()
+        
+        # Only consider winners that are in current race
+        valid_winners = win_counts[win_counts.index.isin(cars)]
+        
+        if not valid_winners.empty:
+            prediction_by_history = valid_winners.idxmax()
+        else:
+            # If no valid winners, use the most frequent winner overall
+            prediction_by_history = exact_matches['Winner'].mode().iloc[0]
+    else:
+        # If no exact matches, fall back to combined speed prediction
+        prediction_by_history = prediction_by_speed
 
-col1, col2 = st.columns(2)
-with col1:
+col1, col2 = st.columns(2)with col1:
     st.success(f"By Combined Speed:\n{prediction_by_speed}")
 with col2:
-    st.info(f"By History:\n{prediction_by_history}")
+    st.info(f"By Exact History:\n{prediction_by_history}")
 
 st.markdown("---")
 actual_winner = st.selectbox("Actual Winner", cars)
@@ -96,7 +109,9 @@ if st.button("Save This Race"):
         "Road": road,
         "Car1": car1,
         "Car2": car2,
-        "Car3": car3,        "Winner": actual_winner})
+        "Car3": car3,
+        "Winner": actual_winner
+    })
     save_history()
     st.balloons()
     st.success(f"Race saved! Total: {len(st.session_state.history)}")
