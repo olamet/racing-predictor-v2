@@ -29,8 +29,8 @@ def save_history():
     df = pd.DataFrame(st.session_state.history)
     df.to_csv('racing_history.csv', index=False)
 
-st.title("🏎️ Racing Predictor")
-st.markdown("Simple version with basic data persistence")
+st.title("🏎️ Racing Predictor Pro")
+st.markdown("Phase 1: Dual Prediction System")
 
 # --- Input Section ---
 col1, col2 = st.columns(2)
@@ -44,16 +44,61 @@ with col2:
 
 cars = [car1, car2, car3]
 
-# --- Distance Weighting ---
+# --- Phase 1: Combined Speed Prediction ---
+st.markdown("---")
+st.subheader("🔮 Dual Predictions")
+# Step 1: Estimate hidden roads based on visible road
+hidden_roads_map = {
+    "expressway": ["highway", "bumpy"],
+    "highway": ["expressway", "dirt"],
+    "dirt": ["potholes", "desert"],
+    "potholes": ["dirt", "bumpy"],
+    "bumpy": ["highway", "potholes"],
+    "desert": ["dirt", "potholes"]
+}
+hidden_roads = hidden_roads_map.get(road, ["dirt", "potholes"])
+
+# Step 2: Calculate combined speeds
 weight_map = {"L": 0.8, "C": 1.0, "R": 1.3}
 weight = weight_map[position]
-speeds = [df_speed.loc[car, road] for car in cars]
-weighted_speeds = [s * weight for s in speeds]
-prediction = cars[weighted_speeds.index(max(weighted_speeds))]
 
-# --- Display Prediction ---
-st.subheader("🔮 Prediction Result")
-st.success(f"Predicted Winner: **{prediction}**")
+combined_speeds = []
+for car in cars:
+    # Speed on visible road (weighted by position)
+    visible_speed = df_speed.loc[car, road] * weight
+    
+    # Speeds on hidden roads (no position weighting)
+    hidden_speed1 = df_speed.loc[car, hidden_roads[0]]
+    hidden_speed2 = df_speed.loc[car, hidden_roads[1]]
+    
+    # Combined speed with weights
+    combined_speed = (visible_speed * 0.6) + (hidden_speed1 * 0.2) + (hidden_speed2 * 0.2)
+    combined_speeds.append(combined_speed)
+
+prediction_by_speed = cars[combined_speeds.index(max(combined_speeds))]
+
+# Step 3: Simple historical prediction
+prediction_by_history = "Car"  # Default
+if st.session_state.history:
+    # Find most common winner in similar conditions
+    hist_df = pd.DataFrame(st.session_state.history)
+    similar_races = hist_df[
+        (hist_df['Road'] == road) & 
+        (hist_df['Position'] == position) &
+        (hist_df['Car1'].isin(cars)) &
+        (hist_df['Car2'].isin(cars)) &
+        (hist_df['Car3'].isin(cars))
+    ]
+    
+    if not similar_races.empty:
+        most_common_winner = similar_races['Winner'].mode().iloc[0]
+        prediction_by_history = most_common_winner
+
+# --- Display Both Predictions ---
+col1, col2 = st.columns(2)
+with col1:    st.success(f"📊 **By Combined Speed:**\n{prediction_by_speed}")
+with col2:
+    st.info(f"📈 **By History:**\n{prediction_by_history}")
 
 # --- Save Actual Result ---
 st.markdown("---")
@@ -74,5 +119,5 @@ if st.button("💾 Save This Race"):
 # --- Show History ---
 if st.session_state.history:
     st.markdown("---")
-    st.subheader("📜 Your Race History")
+    st.subheader("📜 Race History")
     st.dataframe(pd.DataFrame(st.session_state.history))
