@@ -146,7 +146,8 @@ if page == "الرئيسية":
                 if road in ["dirt", "potholes", "desert", "bumpy"]:
                     handling_factor = car_properties[car]["handling"]
                     weight_factor = 1.0 / car_properties[car]["weight"]
-                    combined_speed *= (handling_factor * 0.6 + weight_factor * 0.4)                else:
+                    combined_speed *= (handling_factor * 0.6 + weight_factor * 0.4)
+                else:
                     power_factor = car_properties[car]["power"]
                     combined_speed *= power_factor
                 
