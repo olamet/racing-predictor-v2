@@ -10,6 +10,14 @@ speed_data = {
     "bumpy": [98.4, 168, 151.2, 259.2, 108, 218.4, 213.6, 216, 187.2],
     "desert": [132, 96, 62.4, 132, 72, 58.08, 139.2, 98.28, 168]
 }
+hidden_roads_map = {
+    "expressway": ["highway", "bumpy"],
+    "highway": ["expressway", "dirt"],
+    "dirt": ["potholes", "desert"],
+    "potholes": ["dirt", "bumpy"],
+    "bumpy": ["highway", "potholes"],
+    "desert": ["dirt", "potholes"]
+}
 
 def load_history():
     try:
