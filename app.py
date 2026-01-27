@@ -96,7 +96,8 @@ if page == "الرئيسية":
                 )
                 mode_series = road_matches['full_pair'].mode()
                 if not mode_series.empty:
-                    parts = mode_series.iloc[0].split(',')                    if len(parts) == 4:
+                    parts = mode_series.iloc[0].split(',')
+                    if len(parts) == 4:
                         hidden_roads = [parts[0], parts[2]]
                         hidden_positions = [parts[1], parts[3]]
     
