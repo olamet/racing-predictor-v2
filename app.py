@@ -96,7 +96,8 @@ if page == "الرئيسية":
         else:
             combined_speeds = []
             
-            for car in cars:                car_idx = speed_data["Vehicle"].index(car)
+            for car in cars:
+                car_idx = speed_data["Vehicle"].index(car)
                 visible_speed = speed_data[road][car_idx] * weight
                 hidden_speed1 = speed_data[hidden_roads[0]][car_idx]
                 hidden_speed2 = speed_data[hidden_roads[1]][car_idx]
