@@ -195,7 +195,7 @@ if page == "الرئيسية":
         elif not is_long_hidden1 and not is_long_hidden2:
             is_long_hidden1 = True
             is_long_hidden2 = False
-                for car in cars:
+            for car in cars:
             car_idx = speed_data["Vehicle"].index(car)
             visible_speed = speed_data[road][car_idx] * weight
             
