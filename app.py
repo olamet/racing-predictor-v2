@@ -196,7 +196,8 @@ if page == "الرئيسية":
     actual_winner = st.selectbox("Actual Winner", cars)
     
     st.subheader("الطرق المخفية الفعلية")
-    hidden_road1 = st.selectbox("الطريق المخفي الأول", list(speed_data.keys())[1:], key="hr1")    hidden_road1_pos = st.selectbox("موضع الطريق الأول", ["L", "C", "R"], key="hr1p")
+    hidden_road1 = st.selectbox("الطريق المخفي الأول", list(speed_data.keys())[1:], key="hr1")
+    hidden_road1_pos = st.selectbox("موضع الطريق الأول", ["L", "C", "R"], key="hr1p")
     hidden_road2 = st.selectbox("الطريق المخفي الثاني", list(speed_data.keys())[1:], key="hr2")
     hidden_road2_pos = st.selectbox("موضع الطريق الثاني", ["L", "C", "R"], key="hr2p")
     
