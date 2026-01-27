@@ -97,7 +97,8 @@ if page == "الرئيسية":
                 pair_counts = road_matches['pair'].value_counts()
                 total = len(road_matches)
                 for pair, count in pair_counts.items():
-                    if count / total > 0.5:                        hidden_roads = [r.strip() for r in pair.split(',')]
+                    if count / total > 0.5:
+                        hidden_roads = [r.strip() for r in pair.split(',')]
                         break
     
     prediction_method = ""
