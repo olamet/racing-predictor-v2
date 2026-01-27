@@ -111,6 +111,13 @@ if page == "الرئيسية":
                     if len(parts) == 4:
                         hidden_roads = [parts[0], parts[2]]
                         hidden_positions = [parts[1], parts[3]]
+                        # --- تعديل مواقع الطرق المخفية بناءً على الموضع المرئي ---
+                    if position == "C":
+                        hidden_positions = ["L", "R"]
+                    elif position == "L":
+                        hidden_positions = ["C", "R"]
+                   elif position == "R":
+                        hidden_positions = ["L", "C"]
     
     prediction_method = ""
     
