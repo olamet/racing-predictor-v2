@@ -47,7 +47,8 @@ car_properties = {
 
 def load_history():
     try:
-        df = pd.read_csv('racing_history.csv')        return df.to_dict('records')
+        df = pd.read_csv('racing_history.csv')
+        return df.to_dict('records')
     except FileNotFoundError:
         return []
 
