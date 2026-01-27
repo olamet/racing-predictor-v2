@@ -10,6 +10,8 @@ speed_data = {
     "bumpy": [98.4, 168, 151.2, 259.2, 108, 218.4, 213.6, 216, 187.2],
     "desert": [132, 96, 62.4, 132, 72, 58.08, 139.2, 98.28, 168]
 }
+
+# تعريف خرائط الطرق المخفية (عالميًا لجميع الصفحات)
 hidden_roads_map = {
     "expressway": ["highway", "bumpy"],
     "highway": ["expressway", "dirt"],
@@ -45,18 +47,9 @@ if page == "الرئيسية":
         road = st.selectbox("Visible Road Type", list(speed_data.keys())[1:])
     with col2:
         car1 = st.selectbox("Car 1", speed_data["Vehicle"])
-        car2 = st.selectbox("Car 2", speed_data["Vehicle"])
-        car3 = st.selectbox("Car 3", speed_data["Vehicle"])
+        car2 = st.selectbox("Car 2", speed_data["Vehicle"])        car3 = st.selectbox("Car 3", speed_data["Vehicle"])
     
     cars = [car1, car2, car3]
-    
-    hidden_roads_map = {
-        "expressway": ["highway", "bumpy"],
-        "highway": ["expressway", "dirt"],
-        "dirt": ["potholes", "desert"],
-        "potholes": ["dirt", "bumpy"],
-        "bumpy": ["highway", "potholes"],        "desert": ["dirt", "potholes"]
-    }
     
     st.markdown("---")
     st.subheader("التنبؤ الذكي")
@@ -64,6 +57,7 @@ if page == "الرئيسية":
     weight_map = {"L": 0.8, "C": 1.0, "R": 1.3}
     weight = weight_map[position]
     
+    # --- التنبؤ بالطرق المخفية من البيانات التاريخية ---
     hidden_roads = hidden_roads_map.get(road, ["dirt", "potholes"])
     
     if st.session_state.history and len(st.session_state.history) > 20:
@@ -102,8 +96,7 @@ if page == "الرئيسية":
             prediction = max(win_counts, key=win_counts.get)
             prediction_method = "التاريخي (دقة عالية)"
         else:
-            combined_speeds = []
-            
+            combined_speeds = []            
             for car in cars:
                 car_idx = speed_data["Vehicle"].index(car)
                 visible_speed = speed_data[road][car_idx] * weight
@@ -152,8 +145,7 @@ if page == "الرئيسية":
         })
         save_history()
         st.balloons()
-        st.success(f"تم الحفظ! الإجمالي: {len(st.session_state.history)}")
-    
+        st.success(f"تم الحفظ! الإجمالي: {len(st.session_state.history)}")    
     if st.session_state.history:
         st.markdown("---")
         st.subheader("سجل السباقات")
@@ -187,20 +179,22 @@ elif page == "نسبة الربح":
             "desert": 5
         }
         
-        correct_smart = 0
-        total_races = len(hist_df)
+        # --- حساب نسبة الربح لكل سيارة على حدة ---
+        car_win_rates = {}
+        for car in speed_data["Vehicle"]:
+            car_win_rates[car] = {"correct": 0, "total": 0}
         
         for idx, row in hist_df.iterrows():
             cars = [row['Car1'], row['Car2'], row['Car3']]
             position = row['Position']
             road = row['Road']
             
+            # --- إعادة حساب التنبؤ ---
             prediction = cars[0]
             
             if len(st.session_state.history) > 20:
                 similar_matches = hist_df[
-                    (hist_df['Position'] == position) &
-                    (hist_df['Road'] == road) &
+                    (hist_df['Position'] == position) &                    (hist_df['Road'] == road) &
                     (hist_df['Car1'].isin(cars)) &
                     (hist_df['Car2'].isin(cars)) &
                     (hist_df['Car3'].isin(cars))
@@ -214,7 +208,8 @@ elif page == "نسبة الربح":
                     prediction = max(win_counts, key=win_counts.get)
                 else:
                     weight = {"L": 0.8, "C": 1.0, "R": 1.3}[position]
-                    hidden_roads = hidden_roads_map.get(road, ["dirt", "potholes"])                    
+                    hidden_roads = hidden_roads_map.get(road, ["dirt", "potholes"])
+                    
                     if 'Hidden_Road_1' in row and 'Hidden_Road_2' in row:
                         hidden_roads = [row['Hidden_Road_1'], row['Hidden_Road_2']]
                     
@@ -246,19 +241,49 @@ elif page == "نسبة الربح":
                 
                 prediction = cars[combined_speeds.index(max(combined_speeds))]
             
+            # --- تحديث إحصائيات السيارة الرابحة ---
             actual = row['Winner']
+            car_win_rates[actual]["total"] += 1            
             if prediction == actual:
-                correct_smart += 1
+                car_win_rates[actual]["correct"] += 1
         
-        accuracy_smart = (correct_smart / total_races) * 100
+        # --- حساب النسبة لكل سيارة ---
+        car_accuracy = {}
+        for car, data in car_win_rates.items():
+            if data["total"] > 0:
+                car_accuracy[car] = (data["correct"] / data["total"]) * 100
+            else:
+                car_accuracy[car] = 0.0
         
-        st.metric("نسبة النجاح الذكية", f"{accuracy_smart:.1f}%")
-        st.progress(accuracy_smart / 100)
+        # --- عرض النتائج ---
+        st.subheader("📊 نسبة نجاح توقع السيارة الرابحة")
+        
+        # فرز السيارات حسب النسبة (من الأعلى إلى الأدنى)
+        sorted_cars = sorted(car_accuracy.items(), key=lambda x: x[1], reverse=True)
+        
+        for car, accuracy in sorted_cars:
+            if accuracy > 0:
+                total_wins = car_win_rates[car]["total"]
+                correct_predictions = car_win_rates[car]["correct"]
+                
+                st.write(f"**{car}**: {accuracy:.1f}%")
+                st.caption(f"✅ تنبؤات صحيحة: {correct_predictions}/{total_wins} جولة")
+                st.progress(accuracy / 100)
         
         st.markdown("---")
-        st.subheader("التفاصيل")
-        st.write(f"التنبؤات الصحيحة: {correct_smart}/{total_races}")
-        st.write(f"الهدف: 95%+ (كلما زادت البيانات، زادت الدقة)")
+        st.subheader("📈 الإحصائيات العامة")
+        
+        # حساب النسبة الإجمالية
+        total_correct = sum([data["correct"] for data in car_win_rates.values()])
+        total_wins = sum([data["total"] for data in car_win_rates.values()])
+        
+        if total_wins > 0:
+            overall_accuracy = (total_correct / total_wins) * 100
+            st.metric("النسبة الإجمالية", f"{overall_accuracy:.1f}%")
+            st.progress(overall_accuracy / 100)
+        
+        st.write(f"✅ التنبؤات الصحيحة الإجمالية: {total_correct}/{total_wins}")
+        st.write(f"📊 إجمالي الجولات: {len(hist_df)}")
         
         st.markdown("### نصائح لتحسين الدقة:")
-        st.info("1. أكمل 50 جولة مع إدخال الطرق المخفية الفعلية\\n2. ركز على الظروف النادرة (L + desert)\\n3. حافظ على نفس ترتيب السيارات في الجولات المتشابهة")
+        st.info("1. ركز على السيارات ذات النسبة المنخفضة (< 70%)\n2. أكمل 50 جولة إضافية مع إدخال الطرق المخفية الفعلية\\n3. حافظ على نفس ترتيب السيارات في الجولات المتشابهة")
