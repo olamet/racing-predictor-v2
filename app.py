@@ -48,8 +48,7 @@ car_properties = {
 ROAD_PERCENTAGES = {
     "visible": 0.27,      # الطريق المرئي
     "long_hidden": 0.46,  # الطريق الطويل المخفي (الموضع L)
-    time_hidden2 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed2
-"short_hidden": 0.27  # الطريق المخفي القصير
+    "short_hidden": 0.27  # الطريق المخفي القصير
 }
 
 def load_history():
