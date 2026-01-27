@@ -145,7 +145,8 @@ if page == "الرئيسية":
                 is_long_hidden1 = True
                 is_long_hidden2 = False
             elif not is_long_hidden1 and not is_long_hidden2:
-                is_long_hidden1 = True                is_long_hidden2 = False
+                is_long_hidden1 = True
+                is_long_hidden2 = False
             
             for car in cars:
                 car_idx = speed_data["Vehicle"].index(car)
