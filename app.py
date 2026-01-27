@@ -246,7 +246,8 @@ elif page == "نسبة الربح":
         total_races = len(hist_df)
         correct_predictions = 0
         car_stats = {car: {"wins": 0, "correct_predictions": 0}
-                     for car in speed_data["Vehicle"]} for idx, row in hist_df.iterrows():
+         for car in speed_data["Vehicle"]}
+         for idx, row in hist_df.iterrows():
             if 'Prediction' in row and 'Winner' in row:
                 if row['Prediction'] == row['Winner']:
                     correct_predictions += 1
