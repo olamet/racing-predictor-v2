@@ -130,16 +130,17 @@ else:
     st.markdown("---")
 actual_winner = st.selectbox("Actual Winner", cars)
 
-# --- إضافة حقول الطريقين المخفيين ---
+# --- إضافة الطريقين المخفيين ---
 st.subheader("الطرق المخفية الفعلية")
-hidden_road1 = st.selectbox("الطريق المخفي الأول", list(speed_data.keys())[1:], key="hidden1")
-hidden_road2 = st.selectbox("الطريق المخفي الثاني", list(speed_data.keys())[1:], key="hidden2")
-    if st.button("Save This Race"):
+hidden_road1 = st.selectbox("الطريق المخفي الأول", list(speed_data.keys())[1:], key="hr1")
+hidden_road2 = st.selectbox("الطريق المخفي الثاني", list(speed_data.keys())[1:], key="hr2")
+
+if st.button("Save This Race"):
     st.session_state.history.append({
         "Position": position,
         "Road": road,
-        "Hidden_Road_1": hidden_road1,  # جديد
-        "Hidden_Road_2": hidden_road2,  # جديد
+        "Hidden_Road_1": hidden_road1,
+        "Hidden_Road_2": hidden_road2,
         "Car1": car1,
         "Car2": car2,
         "Car3": car3,
