@@ -156,7 +156,8 @@ elif page == "نسبة الربح":
     
     if not st.session_state.history or len(st.session_state.history) < 10:
         st.warning(f"يجب أن يكون لديك 10 جولات على الأقل. لديك الآن: {len(st.session_state.history)}")
-    else:        hist_df = pd.DataFrame(st.session_state.history)
+    else:
+        hist_df = pd.DataFrame(st.session_state.history)
         
         speed_data_dict = {}
         for i, vehicle in enumerate(speed_data["Vehicle"]):
