@@ -62,16 +62,15 @@ if st.session_state.history and len(st.session_state.history) > 20:
             (hist_temp['Position'] == position)
         ]
         if not road_matches.empty:
-            road_matches['pair'] = road_matches['Hidden_Road_1'] + ',' + road_matches['Hidden_Road_2']
-            most_common = road_matches['pair'].mode().iloc[0]
-            hidden_roads = [r.strip() for r in most_common.split(',')]
-        else:
-            hidden_roads = hidden_roads_map.get(road, ["dirt", "potholes"])
+    road_matches['pair'] = road_matches['Hidden_Road_1'] + ',' + road_matches['Hidden_Road_2']
+    mode_series = road_matches['pair'].mode()
+    if not mode_series.empty:
+        most_common = mode_series.iloc[0]
+        hidden_roads = [r.strip() for r in most_common.split(',')]
     else:
         hidden_roads = hidden_roads_map.get(road, ["dirt", "potholes"])
 else:
-    hidden_roads = hidden_roads_map.get(road, ["dirt", "potholes"])
-    
+    hidden_roads = hidden_roads_map.get(road, ["dirt", "potholes"])    
     weight_map = {"L": 0.8, "C": 1.0, "R": 1.3}
     weight = weight_map[position]
     
