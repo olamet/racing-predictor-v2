@@ -143,6 +143,8 @@ if page == "الرئيسية":
             "Car2": car2,
             "Car3": car3,
             "Winner": actual_winner
+            "Prediction": prediction,
+            "Prediction_Method": prediction_method
         })
         save_history()
         st.balloons()
