@@ -53,6 +53,23 @@ if page == "الرئيسية":
         "bumpy": ["highway", "potholes"],
         "desert": ["dirt", "potholes"]
     }
+    # --- التنبؤ بالطرق المخفية من البيانات التاريخية ---
+if st.session_state.history and len(st.session_state.history) > 20:
+    hist_temp = pd.DataFrame(st.session_state.history)
+    if 'Hidden_Road_1' in hist_temp.columns and 'Hidden_Road_2' in hist_temp.columns:
+        road_matches = hist_temp[
+            (hist_temp['Road'] == road) & 
+            (hist_temp['Position'] == position)
+        ]
+        if not road_matches.empty:
+            road_matches['pair'] = road_matches['Hidden_Road_1'] + ',' + road_matches['Hidden_Road_2']
+            most_common = road_matches['pair'].mode().iloc[0]
+            hidden_roads = [r.strip() for r in most_common.split(',')]
+        else:
+            hidden_roads = hidden_roads_map.get(road, ["dirt", "potholes"])
+    else:
+        hidden_roads = hidden_roads_map.get(road, ["dirt", "potholes"])
+else:
     hidden_roads = hidden_roads_map.get(road, ["dirt", "potholes"])
     
     weight_map = {"L": 0.8, "C": 1.0, "R": 1.3}
@@ -111,19 +128,26 @@ if page == "الرئيسية":
     st.caption(f"الطريقة المستخدمة: {prediction_method}")
     
     st.markdown("---")
-    actual_winner = st.selectbox("Actual Winner", cars)
+actual_winner = st.selectbox("Actual Winner", cars)
+
+# --- إضافة حقول الطريقين المخفيين ---
+st.subheader("الطرق المخفية الفعلية")
+hidden_road1 = st.selectbox("الطريق المخفي الأول", list(speed_data.keys())[1:], key="hidden1")
+hidden_road2 = st.selectbox("الطريق المخفي الثاني", list(speed_data.keys())[1:], key="hidden2")
     if st.button("Save This Race"):
-        st.session_state.history.append({
-            "Position": position,
-            "Road": road,
-            "Car1": car1,
-            "Car2": car2,
-            "Car3": car3,
-            "Winner": actual_winner
-        })
-        save_history()
-        st.balloons()
-        st.success(f"Race saved! Total: {len(st.session_state.history)}")
+    st.session_state.history.append({
+        "Position": position,
+        "Road": road,
+        "Hidden_Road_1": hidden_road1,  # جديد
+        "Hidden_Road_2": hidden_road2,  # جديد
+        "Car1": car1,
+        "Car2": car2,
+        "Car3": car3,
+        "Winner": actual_winner
+    })
+    save_history()
+    st.balloons()
+    st.success(f"Race saved! Total: {len(st.session_state.history)}")
     
     if st.session_state.history:
         st.markdown("---")
