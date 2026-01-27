@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 
+# --- تعريف بيانات السرعات ---
 speed_data = {
     "Vehicle": ["Car", "Sport", "Super", "Bigbike", "Moto", "ORV", "SUV", "Truck", "ATV"],
     "expressway": [264, 432, 480, 264, 220.8, 286, 348, 240, 115.2],
@@ -11,7 +12,7 @@ speed_data = {
     "desert": [132, 96, 62.4, 132, 72, 58.08, 139.2, 98.28, 168]
 }
 
-# تعريف خرائط الطرق المخفية (عالميًا لجميع الصفحات)
+# --- خرائط الطرق المخفية (عالمي) ---
 hidden_roads_map = {
     "expressway": ["highway", "bumpy"],
     "highway": ["expressway", "dirt"],
@@ -21,10 +22,32 @@ hidden_roads_map = {
     "desert": ["dirt", "potholes"]
 }
 
+# --- أوزان ديناميكية حسب نوع الطريق ---
+road_weights_config = {
+    "expressway": {"visible": 0.5, "hidden1": 0.25, "hidden2": 0.25},
+    "highway": {"visible": 0.5, "hidden1": 0.25, "hidden2": 0.25},
+    "dirt": {"visible": 0.3, "hidden1": 0.35, "hidden2": 0.35},
+    "potholes": {"visible": 0.3, "hidden1": 0.35, "hidden2": 0.35},
+    "bumpy": {"visible": 0.4, "hidden1": 0.3, "hidden2": 0.3},
+    "desert": {"visible": 0.2, "hidden1": 0.4, "hidden2": 0.4}
+}
+
+# --- خصائص السيارات (لتحسين التنبؤ) ---
+car_properties = {
+    "Car": {"weight": 1.0, "power": 1.0, "handling": 1.0},
+    "Sport": {"weight": 0.8, "power": 1.3, "handling": 1.2},
+    "Super": {"weight": 0.7, "power": 1.5, "handling": 1.4},
+    "Bigbike": {"weight": 0.6, "power": 1.2, "handling": 0.9},
+    "Moto": {"weight": 0.5, "power": 1.0, "handling": 0.8},
+    "ORV": {"weight": 1.3, "power": 1.1, "handling": 1.5},
+    "SUV": {"weight": 1.2, "power": 1.2, "handling": 1.3},
+    "Truck": {"weight": 1.5, "power": 1.0, "handling": 0.7},
+    "ATV": {"weight": 0.9, "power": 0.9, "handling": 1.6}
+}
+
 def load_history():
     try:
-        df = pd.read_csv('racing_history.csv')
-        return df.to_dict('records')
+        df = pd.read_csv('racing_history.csv')        return df.to_dict('records')
     except FileNotFoundError:
         return []
 
@@ -39,7 +62,7 @@ page = st.sidebar.radio("اختر الصفحة", ["الرئيسية", "نسبة 
 
 if page == "الرئيسية":
     st.title("Racing Predictor Pro")
-    st.markdown("تنبؤ ذكي مع طرق مخفية فعلية")
+    st.markdown("تنبؤ ذكي مع تحسينات متقدمة")
     
     col1, col2 = st.columns(2)
     with col1:
@@ -70,10 +93,11 @@ if page == "الرئيسية":
             ]
             if not road_matches.empty:
                 road_matches['pair'] = road_matches['Hidden_Road_1'] + ',' + road_matches['Hidden_Road_2']
-                mode_series = road_matches['pair'].mode()
-                if not mode_series.empty:
-                    most_common = mode_series.iloc[0]
-                    hidden_roads = [r.strip() for r in most_common.split(',')]
+                pair_counts = road_matches['pair'].value_counts()
+                total = len(road_matches)
+                for pair, count in pair_counts.items():
+                    if count / total > 0.5:                        hidden_roads = [r.strip() for r in pair.split(',')]
+                        break
     
     prediction_method = ""
     
@@ -97,18 +121,37 @@ if page == "الرئيسية":
             prediction = max(win_counts, key=win_counts.get)
             prediction_method = "التاريخي (دقة عالية)"
         else:
-            combined_speeds = []            
+            # --- استخدام الأوزان الديناميكية وخصائص السيارات ---
+            weights = road_weights_config.get(road, {"visible": 0.4, "hidden1": 0.3, "hidden2": 0.3})
+            combined_speeds = []
+            
             for car in cars:
                 car_idx = speed_data["Vehicle"].index(car)
                 visible_speed = speed_data[road][car_idx] * weight
                 hidden_speed1 = speed_data[hidden_roads[0]][car_idx]
                 hidden_speed2 = speed_data[hidden_roads[1]][car_idx]
-                combined_speed = (visible_speed * 0.4) + (hidden_speed1 * 0.3) + (hidden_speed2 * 0.3)
+                
+                # حساب السرعة المدمجة
+                combined_speed = (
+                    visible_speed * weights["visible"] +
+                    hidden_speed1 * weights["hidden1"] +
+                    hidden_speed2 * weights["hidden2"]
+                )
+                
+                # تعديل السرعة حسب خصائص السيارة
+                if road in ["dirt", "potholes", "desert", "bumpy"]:
+                    handling_factor = car_properties[car]["handling"]
+                    weight_factor = 1.0 / car_properties[car]["weight"]
+                    combined_speed *= (handling_factor * 0.6 + weight_factor * 0.4)
+                else:
+                    power_factor = car_properties[car]["power"]
+                    combined_speed *= power_factor                
                 combined_speeds.append(combined_speed)
             
             prediction = cars[combined_speeds.index(max(combined_speeds))]
-            prediction_method = "المدمج (السرعة + التاريخ)"
+            prediction_method = "المدمج (مُحسّن)"
     else:
+        weights = road_weights_config.get(road, {"visible": 0.6, "hidden1": 0.2, "hidden2": 0.2})
         combined_speeds = []
         
         for car in cars:
@@ -116,11 +159,25 @@ if page == "الرئيسية":
             visible_speed = speed_data[road][car_idx] * weight
             hidden_speed1 = speed_data[hidden_roads[0]][car_idx]
             hidden_speed2 = speed_data[hidden_roads[1]][car_idx]
-            combined_speed = (visible_speed * 0.6) + (hidden_speed1 * 0.2) + (hidden_speed2 * 0.2)
+            
+            combined_speed = (
+                visible_speed * weights["visible"] +
+                hidden_speed1 * weights["hidden1"] +
+                hidden_speed2 * weights["hidden2"]
+            )
+            
+            if road in ["dirt", "potholes", "desert", "bumpy"]:
+                handling_factor = car_properties[car]["handling"]
+                weight_factor = 1.0 / car_properties[car]["weight"]
+                combined_speed *= (handling_factor * 0.6 + weight_factor * 0.4)
+            else:
+                power_factor = car_properties[car]["power"]
+                combined_speed *= power_factor
+            
             combined_speeds.append(combined_speed)
         
         prediction = cars[combined_speeds.index(max(combined_speeds))]
-        prediction_method = "السرعة (بيانات أولية)"
+        prediction_method = "السرعة (مُحسّن)"
     
     st.success(f"التنبؤ: **{prediction}**")
     st.caption(f"الطريقة: {prediction_method}")
@@ -137,8 +194,7 @@ if page == "الرئيسية":
         st.session_state.history.append({
             "Position": position,
             "Road": road,
-            "Hidden_Road_1": hidden_road1,
-            "Hidden_Road_2": hidden_road2,
+            "Hidden_Road_1": hidden_road1,            "Hidden_Road_2": hidden_road2,
             "Car1": car1,
             "Car2": car2,
             "Car3": car3,
@@ -148,145 +204,79 @@ if page == "الرئيسية":
         })
         save_history()
         st.balloons()
-        st.success(f"تم الحفظ! الإجمالي: {len(st.session_state.history)}")    
+        st.success(f"تم الحفظ! الإجمالي: {len(st.session_state.history)}")
+    
     if st.session_state.history:
         st.markdown("---")
         st.subheader("سجل السباقات")
         st.dataframe(pd.DataFrame(st.session_state.history))
 
 elif page == "نسبة الربح":
-    st.title("نسبة ربح التوقعات")
+    st.title("📊 نسبة ربح التوقعات")
     
     if not st.session_state.history or len(st.session_state.history) < 10:
         st.warning(f"يجب أن يكون لديك 10 جولات على الأقل. لديك الآن: {len(st.session_state.history)}")
     else:
         hist_df = pd.DataFrame(st.session_state.history)
         
-        speed_data_dict = {}
-        for i, vehicle in enumerate(speed_data["Vehicle"]):
-            speed_data_dict[vehicle] = [
-                speed_data["expressway"][i],
-                speed_data["highway"][i],
-                speed_data["dirt"][i],
-                speed_data["potholes"][i],
-                speed_data["bumpy"][i],
-                speed_data["desert"][i]
-            ]
+        # --- حساب النسبة الإجمالية باستخدام التنبؤات المحفوظة ---
+        total_races = len(hist_df)
+        correct_predictions = 0
         
-        road_index = {
-            "expressway": 0,
-            "highway": 1,
-            "dirt": 2,
-            "potholes": 3,
-            "bumpy": 4,
-            "desert": 5
-        }
-        
-        # --- حساب نسبة الربح لكل سيارة على حدة ---
-        car_win_rates = {}
+        # --- حساب إحصائيات كل سيارة ---
+        car_stats = {}
         for car in speed_data["Vehicle"]:
-            car_win_rates[car] = {"correct": 0, "total": 0}
+            car_stats[car] = {"wins": 0, "correct_predictions": 0}
         
         for idx, row in hist_df.iterrows():
-            cars = [row['Car1'], row['Car2'], row['Car3']]
-            position = row['Position']
-            road = row['Road']
-            
-            # --- إعادة حساب التنبؤ ---
-            prediction = cars[0]
-            
-            if len(st.session_state.history) > 20:
-                similar_matches = hist_df[
-                    (hist_df['Position'] == position) &                    (hist_df['Road'] == road) &
-                    (hist_df['Car1'].isin(cars)) &
-                    (hist_df['Car2'].isin(cars)) &
-                    (hist_df['Car3'].isin(cars))
-                ]
-                
-                if len(similar_matches) >= 1:
-                    win_counts = {}
-                    for car in cars:
-                        wins = len(similar_matches[similar_matches['Winner'] == car])
-                        win_counts[car] = wins
-                    prediction = max(win_counts, key=win_counts.get)
-                else:
-                    weight = {"L": 0.8, "C": 1.0, "R": 1.3}[position]
-                    hidden_roads = hidden_roads_map.get(road, ["dirt", "potholes"])
-                    
-                    if 'Hidden_Road_1' in row and 'Hidden_Road_2' in row:
-                        hidden_roads = [row['Hidden_Road_1'], row['Hidden_Road_2']]
-                    
-                    combined_speeds = []
-                    
-                    for car in cars:
-                        visible_speed = speed_data_dict[car][road_index[road]] * weight
-                        hidden_speed1 = speed_data_dict[car][road_index[hidden_roads[0]]]
-                        hidden_speed2 = speed_data_dict[car][road_index[hidden_roads[1]]]
-                        combined_speed = (visible_speed * 0.4) + (hidden_speed1 * 0.3) + (hidden_speed2 * 0.3)
-                        combined_speeds.append(combined_speed)
-                    
-                    prediction = cars[combined_speeds.index(max(combined_speeds))]
-            else:
-                weight = {"L": 0.8, "C": 1.0, "R": 1.3}[position]
-                hidden_roads = hidden_roads_map.get(road, ["dirt", "potholes"])
-                
-                if 'Hidden_Road_1' in row and 'Hidden_Road_2' in row:
-                    hidden_roads = [row['Hidden_Road_1'], row['Hidden_Road_2']]
-                
-                combined_speeds = []
-                
-                for car in cars:
-                    visible_speed = speed_data_dict[car][road_index[road]] * weight
-                    hidden_speed1 = speed_data_dict[car][road_index[hidden_roads[0]]]
-                    hidden_speed2 = speed_data_dict[car][road_index[hidden_roads[1]]]
-                    combined_speed = (visible_speed * 0.6) + (hidden_speed1 * 0.2) + (hidden_speed2 * 0.2)
-                    combined_speeds.append(combined_speed)
-                
-                prediction = cars[combined_speeds.index(max(combined_speeds))]
-            
-            # --- تحديث إحصائيات السيارة الرابحة ---
-            actual = row['Winner']
-            car_win_rates[actual]["total"] += 1            
-            if prediction == actual:
-                car_win_rates[actual]["correct"] += 1
+            # التحقق من وجود التنبؤ المحفوظ
+            if 'Prediction' in row and 'Winner' in row:
+                if row['Prediction'] == row['Winner']:
+                    correct_predictions += 1
+                    car_stats[row['Winner']]['correct_predictions'] += 1
+                car_stats[row['Winner']]['wins'] += 1
         
-        # --- حساب النسبة لكل سيارة ---
-        car_accuracy = {}
-        for car, data in car_win_rates.items():
-            if data["total"] > 0:
-                car_accuracy[car] = (data["correct"] / data["total"]) * 100
-            else:
-                car_accuracy[car] = 0.0
+        overall_accuracy = (correct_predictions / total_races) * 100 if total_races > 0 else 0
         
-        # --- عرض النتائج ---
-        st.subheader("📊 نسبة نجاح توقع السيارة الرابحة")
+        # --- عرض النسبة الإجمالية ---
+        st.metric("النسبة الإجمالية للربح", f"{overall_accuracy:.1f}%")
+        st.progress(overall_accuracy / 100)
+        st.write(f"✅ التنبؤات الصحيحة: {correct_predictions}/{total_races}")
+        
+        st.markdown("---")        st.subheader("🎯 نسبة نجاح توقع كل سيارة")
         
         # فرز السيارات حسب النسبة (من الأعلى إلى الأدنى)
-        sorted_cars = sorted(car_accuracy.items(), key=lambda x: x[1], reverse=True)
+        car_accuracy_list = []
+        for car, stats in car_stats.items():
+            if stats['wins'] > 0:
+                accuracy = (stats['correct_predictions'] / stats['wins']) * 100
+                car_accuracy_list.append((car, accuracy, stats['wins'], stats['correct_predictions']))
         
-        for car, accuracy in sorted_cars:
-            if accuracy > 0:
-                total_wins = car_win_rates[car]["total"]
-                correct_predictions = car_win_rates[car]["correct"]
-                
-                st.write(f"**{car}**: {accuracy:.1f}%")
-                st.caption(f"✅ تنبؤات صحيحة: {correct_predictions}/{total_wins} جولة")
-                st.progress(accuracy / 100)
+        # فرز حسب الدقة ثم حسب عدد الانتصارات
+        car_accuracy_list.sort(key=lambda x: (-x[1], -x[2]))
+        
+        for car, accuracy, total_wins, correct in car_accuracy_list:
+            st.write(f"**{car}**: {accuracy:.1f}%")
+            st.caption(f"✅ {correct}/{total_wins} جولة فازت فيها")
+            st.progress(accuracy / 100)
         
         st.markdown("---")
-        st.subheader("📈 الإحصائيات العامة")
+        st.subheader("📈 ملخص الأداء")
+        st.write(f"📊 إجمالي الجولات: {total_races}")
+        st.write(f"✅ التنبؤات الصحيحة: {correct_predictions}")
+        st.write(f"❌ التنبؤات الخاطئة: {total_races - correct_predictions}")
         
-        # حساب النسبة الإجمالية
-        total_correct = sum([data["correct"] for data in car_win_rates.values()])
-        total_wins = sum([data["total"] for data in car_win_rates.values()])
-        
-        if total_wins > 0:
-            overall_accuracy = (total_correct / total_wins) * 100
-            st.metric("النسبة الإجمالية", f"{overall_accuracy:.1f}%")
-            st.progress(overall_accuracy / 100)
-        
-        st.write(f"✅ التنبؤات الصحيحة الإجمالية: {total_correct}/{total_wins}")
-        st.write(f"📊 إجمالي الجولات: {len(hist_df)}")
+        # تحديد أفضل وأسوأ سيارة
+        if car_accuracy_list:
+            best_car = car_accuracy_list[0]
+            worst_car = car_accuracy_list[-1]
+            st.write(f"🏆 أفضل سيارة في التنبؤ: **{best_car[0]}** ({best_car[1]:.1f}%)")
+            st.write(f"⚠️ أسوأ سيارة في التنبؤ: **{worst_car[0]}** ({worst_car[1]:.1f}%)")
         
         st.markdown("### نصائح لتحسين الدقة:")
-        st.info("1. ركز على السيارات ذات النسبة المنخفضة (< 70%)\n2. أكمل 50 جولة إضافية مع إدخال الطرق المخفية الفعلية\\n3. حافظ على نفس ترتيب السيارات في الجولات المتشابهة")
+        st.info(
+            "1. ركز على السيارات ذات النسبة المنخفضة (< 70%)\n"
+            "2. أكمل 50 جولة إضافية مع إدخال الطرق المخفية الفعلية\\n"
+            "3. حافظ على نفس ترتيب السيارات في الجولات المتشابهة\\n"
+            "4. الطرق الوعرة (desert, potholes) تحتاج إلى بيانات أكثر"
+        )
