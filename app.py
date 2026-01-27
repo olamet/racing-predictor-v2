@@ -71,7 +71,7 @@ if page == "الرئيسية":
             (hist_df['Car3'].isin(cars))
         ]
         
-        if len(similar_matches) >= 5:
+        if len(similar_matches) >= 1:
             win_counts = {}
             for car in cars:
                 wins = len(similar_matches[similar_matches['Winner'] == car])
@@ -80,13 +80,16 @@ if page == "الرئيسية":
             prediction = max(win_counts, key=win_counts.get)
             prediction_method = "التاريخي (دقة عالية)"
         else:
+            if len(similar_matches) == 0:
+               prediction = "لم يتم التنبؤ (بيانات غير كافية)"
+               prediction_method = "التنبؤ مُعطل"
             combined_speeds = []
             for car in cars:
                 car_idx = speed_data["Vehicle"].index(car)
                 visible_speed = speed_data[road][car_idx] * weight
                 hidden_speed1 = speed_data[hidden_roads[0]][car_idx]
                 hidden_speed2 = speed_data[hidden_roads[1]][car_idx]
-                combined_speed = (visible_speed * 0.7) + (hidden_speed1 * 0.15) + (hidden_speed2 * 0.15)
+                combined_speed = (visible_speed * 0.4) + (hidden_speed1 * 0.3) + (hidden_speed2 * 0.3)
                 combined_speeds.append(combined_speed)
             
             prediction = cars[combined_speeds.index(max(combined_speeds))]
