@@ -245,7 +245,8 @@ elif page == "نسبة الربح":
         st.progress(overall_accuracy / 100)
         st.write(f"✅ التنبؤات الصحيحة: {correct_predictions}/{total_races}")
         
-        st.markdown("---")        st.subheader("🎯 نسبة نجاح توقع كل سيارة")
+        st.markdown("---")
+        st.subheader("🎯 نسبة نجاح توقع كل سيارة")
         
         # فرز السيارات حسب النسبة (من الأعلى إلى الأدنى)
         car_accuracy_list = []
