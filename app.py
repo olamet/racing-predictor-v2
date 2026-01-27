@@ -116,7 +116,7 @@ if page == "الرئيسية":
                         hidden_positions = ["L", "R"]
                     elif position == "L":
                         hidden_positions = ["C", "R"]
-                   elif position == "R":
+                    elif position == "R":
                         hidden_positions = ["L", "C"]
     
     prediction_method = ""
