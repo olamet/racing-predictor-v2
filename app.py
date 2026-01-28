@@ -146,7 +146,8 @@ if page == "الرئيسية":
         else:
             combined_times = []
             
-            for car in cars:                car_idx = speed_data["Vehicle"].index(car)
+            for car in cars:
+                car_idx = speed_data["Vehicle"].index(car)
                 visible_speed = speed_data[road][car_idx] * weight
                 
                 h1_weight = weight_map.get(hidden_positions[0], 1.0)
@@ -195,7 +196,8 @@ if page == "الرئيسية":
             
             # --- حساب الوقت مع الطريق الأطول الافتراضي (المرئي) ---
             if long_road == "المرئي":
-                time_visible = ROAD_PERCENTAGES["long_hidden"] / visible_speed                time_hidden1 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed1
+                time_visible = ROAD_PERCENTAGES["long_hidden"] / visible_speed
+                time_hidden1 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed1
                 time_hidden2 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed2
             elif long_road == "المخفي الأول":
                 time_visible = ROAD_PERCENTAGES["short_hidden"] / visible_speed
@@ -244,7 +246,8 @@ if page == "الرئيسية":
         st.session_state.history.append({
             "Position": position,
             "Road": road,
-            "Hidden_Road_1": hidden_road1,            "Hidden_Road_1_Position": hidden_road1_pos,
+            "Hidden_Road_1": hidden_road1,
+            "Hidden_Road_1_Position": hidden_road1_pos,
             "Hidden_Road_2": hidden_road2,
             "Hidden_Road_2_Position": hidden_road2_pos,
             "Long_Road": long_road_index,
