@@ -47,7 +47,8 @@ ROAD_PERCENTAGES = {
     "short_hidden": 0.27
 }
 
-def load_history():    try:
+def load_history():
+    try:
         df = pd.read_csv('racing_history.csv')
         return df.to_dict('records')
     except FileNotFoundError:
