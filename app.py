@@ -11,7 +11,6 @@ speed_data = {
     "desert": [132, 96, 62.4, 132, 72, 58.08, 139.2, 98.28, 168]
 }
 
-# --- خرائط الطرق المخفية ---
 hidden_roads_map = {
     "expressway": ["highway", "bumpy"],
     "highway": ["expressway", "dirt"],
@@ -21,7 +20,6 @@ hidden_roads_map = {
     "desert": ["dirt", "potholes"]
 }
 
-# --- أوزان ديناميكية حسب نوع الطريق ---
 road_weights_config = {
     "expressway": {"visible": 0.5, "hidden1": 0.25, "hidden2": 0.25},
     "highway": {"visible": 0.5, "hidden1": 0.25, "hidden2": 0.25},
@@ -31,7 +29,6 @@ road_weights_config = {
     "desert": {"visible": 0.2, "hidden1": 0.4, "hidden2": 0.4}
 }
 
-# --- خصائص السيارات ---
 car_properties = {
     "Car": {"weight": 1.0, "power": 1.0, "handling": 1.0},
     "Sport": {"weight": 0.8, "power": 1.3, "handling": 1.2},
@@ -44,15 +41,13 @@ car_properties = {
     "ATV": {"weight": 0.9, "power": 0.9, "handling": 1.6}
 }
 
-# --- النسب المئوية الصحيحة للطرق (46% + 27% + 27%) ---
 ROAD_PERCENTAGES = {
-    "visible": 0.27,      # الطريق المرئي
-    "long_hidden": 0.46,  # الطريق الطويل المخفي (الموضع L)
-    "short_hidden": 0.27  # الطريق المخفي القصير
+    "visible": 0.27,
+    "long_hidden": 0.46,
+    "short_hidden": 0.27
 }
 
-def load_history():
-    try:
+def load_history():    try:
         df = pd.read_csv('racing_history.csv')
         return df.to_dict('records')
     except FileNotFoundError:
@@ -69,7 +64,7 @@ page = st.sidebar.radio("اختر الصفحة", ["الرئيسية", "نسبة 
 
 if page == "الرئيسية":
     st.title("Racing Predictor Pro")
-    st.markdown("تنبؤ ذكي مع نسب طرق دقيقة (46% + 27% + 27%)")
+    st.markdown("تنبؤ ذكي مع تحديد الطريق الأطول بدقة")
     
     col1, col2 = st.columns(2)
     with col1:
@@ -90,18 +85,18 @@ if page == "الرئيسية":
     
     # --- التنبؤ بالطرق المخفية ومواقعها ---
     hidden_roads = hidden_roads_map.get(road, ["dirt", "potholes"])
-    hidden_positions = ["C", "C"]  # افتراضي: وسط
+    hidden_positions = ["C", "C"]
     
     if st.session_state.history and len(st.session_state.history) > 20:
         hist_temp = pd.DataFrame(st.session_state.history)
         if 'Hidden_Road_1' in hist_temp.columns and 'Hidden_Road_1_Position' in hist_temp.columns:
             road_matches = hist_temp[
                 (hist_temp['Road'] == road) & 
-                (hist_temp['Position'] == position)            ]
+                (hist_temp['Position'] == position)
+            ]
             if not road_matches.empty:
                 road_matches['full_pair'] = (
-                    road_matches['Hidden_Road_1'] + ',' + 
-                    road_matches['Hidden_Road_1_Position'] + ',' +
+                    road_matches['Hidden_Road_1'] + ',' +                     road_matches['Hidden_Road_1_Position'] + ',' +
                     road_matches['Hidden_Road_2'] + ',' + 
                     road_matches['Hidden_Road_2_Position']
                 )
@@ -111,13 +106,20 @@ if page == "الرئيسية":
                     if len(parts) == 4:
                         hidden_roads = [parts[0], parts[2]]
                         hidden_positions = [parts[1], parts[3]]
-                        # --- تعديل مواقع الطرق المخفية بناءً على الموضع المرئي ---
-                    if position == "C":
-                        hidden_positions = ["L", "R"]
-                    elif position == "L":
-                        hidden_positions = ["C", "R"]
-                    elif position == "R":
-                        hidden_positions = ["L", "C"]
+    
+    # --- تحديد الطريق الأطول من البيانات التاريخية ---
+    long_road = "المرئي"  # افتراضي
+    if st.session_state.history and len(st.session_state.history) > 20:
+        hist_temp = pd.DataFrame(st.session_state.history)
+        if 'Long_Road' in hist_temp.columns:
+            road_matches = hist_temp[
+                (hist_temp['Road'] == road) & 
+                (hist_temp['Position'] == position)
+            ]
+            if not road_matches.empty:
+                mode_series = road_matches['Long_Road'].mode()
+                if not mode_series.empty:
+                    long_road = mode_series.iloc[0]
     
     prediction_method = ""
     
@@ -141,44 +143,32 @@ if page == "الرئيسية":
             prediction = max(win_counts, key=win_counts.get)
             prediction_method = "التاريخي (دقة عالية)"
         else:
-            # --- حساب الوقت الإجمالي باستخدام النسب الصحيحة (46% + 27% + 27%) ---
             combined_times = []
             
-            # تحديد الطريق الطويل (الموضع L)
-            is_long_hidden1 = (hidden_positions[0] == "L")
-            is_long_hidden2 = (hidden_positions[1] == "L")
-            
-            # ضمان وجود طريق طويل واحد فقط
-            if is_long_hidden1 and is_long_hidden2:
-                is_long_hidden1 = True
-                is_long_hidden2 = False
-            elif not is_long_hidden1 and not is_long_hidden2:
-                is_long_hidden1 = True
-                is_long_hidden2 = False
-            
-            for car in cars:
-                car_idx = speed_data["Vehicle"].index(car)
+            for car in cars:                car_idx = speed_data["Vehicle"].index(car)
                 visible_speed = speed_data[road][car_idx] * weight
                 
-                # سرعة الطرق المخفية مع تعديل الموضع
                 h1_weight = weight_map.get(hidden_positions[0], 1.0)
                 h2_weight = weight_map.get(hidden_positions[1], 1.0)
                 hidden_speed1 = speed_data[hidden_roads[0]][car_idx] * h1_weight
                 hidden_speed2 = speed_data[hidden_roads[1]][car_idx] * h2_weight
                 
-                # حساب الوقت باستخدام النسب المئوية الصحيحة
-                time_visible = ROAD_PERCENTAGES["visible"] / visible_speed
-                
-                if is_long_hidden1:
+                # --- حساب الوقت مع تحديد الطريق الأطول ---
+                if long_road == "المرئي":
+                    time_visible = ROAD_PERCENTAGES["long_hidden"] / visible_speed
+                    time_hidden1 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed1
+                    time_hidden2 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed2
+                elif long_road == "المخفي الأول":
+                    time_visible = ROAD_PERCENTAGES["short_hidden"] / visible_speed
                     time_hidden1 = ROAD_PERCENTAGES["long_hidden"] / hidden_speed1
                     time_hidden2 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed2
-                else:
+                else:  # المخفي الثاني
+                    time_visible = ROAD_PERCENTAGES["short_hidden"] / visible_speed
                     time_hidden1 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed1
                     time_hidden2 = ROAD_PERCENTAGES["long_hidden"] / hidden_speed2
                 
                 total_time = time_visible + time_hidden1 + time_hidden2
                 
-                # تعديل الوقت حسب خصائص السيارة
                 if road in ["dirt", "potholes", "desert", "bumpy"]:
                     handling_factor = car_properties[car]["handling"]
                     total_time *= (1.0 - handling_factor * 0.2)
@@ -189,35 +179,29 @@ if page == "الرئيسية":
                 combined_times.append(total_time)
             
             prediction = cars[combined_times.index(min(combined_times))]
-            prediction_method = "المدمج (الوقت: 46%+27%+27%)"
+            prediction_method = f"المدمج (الطريق الأطول: {long_road})"
     else:
-        # --- نفس الحساب للبيانات الأولية ---
         combined_times = []
         
-        is_long_hidden1 = (hidden_positions[0] == "L")
-        is_long_hidden2 = (hidden_positions[1] == "L")
-        
-        if is_long_hidden1 and is_long_hidden2:
-            is_long_hidden1 = True
-            is_long_hidden2 = False
-        elif not is_long_hidden1 and not is_long_hidden2:
-            is_long_hidden1 = True
-            is_long_hidden2 = False
-            for car in cars:
-              car_idx = speed_data["Vehicle"].index(car)
-              visible_speed = speed_data[road][car_idx] * weight
+        for car in cars:
+            car_idx = speed_data["Vehicle"].index(car)
+            visible_speed = speed_data[road][car_idx] * weight
             
             h1_weight = weight_map.get(hidden_positions[0], 1.0)
             h2_weight = weight_map.get(hidden_positions[1], 1.0)
             hidden_speed1 = speed_data[hidden_roads[0]][car_idx] * h1_weight
             hidden_speed2 = speed_data[hidden_roads[1]][car_idx] * h2_weight
             
-            time_visible = ROAD_PERCENTAGES["visible"] / visible_speed
-            
-            if is_long_hidden1:
+            # --- حساب الوقت مع الطريق الأطول الافتراضي (المرئي) ---
+            if long_road == "المرئي":
+                time_visible = ROAD_PERCENTAGES["long_hidden"] / visible_speed                time_hidden1 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed1
+                time_hidden2 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed2
+            elif long_road == "المخفي الأول":
+                time_visible = ROAD_PERCENTAGES["short_hidden"] / visible_speed
                 time_hidden1 = ROAD_PERCENTAGES["long_hidden"] / hidden_speed1
                 time_hidden2 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed2
-            else:
+            else:  # المخفي الثاني
+                time_visible = ROAD_PERCENTAGES["short_hidden"] / visible_speed
                 time_hidden1 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed1
                 time_hidden2 = ROAD_PERCENTAGES["long_hidden"] / hidden_speed2
             
@@ -233,7 +217,7 @@ if page == "الرئيسية":
             combined_times.append(total_time)
         
         prediction = cars[combined_times.index(min(combined_times))]
-        prediction_method = "الوقت (بيانات أولية)"
+        prediction_method = f"الوقت (الطريق الأطول: {long_road})"
     
     st.success(f"التنبؤ: **{prediction}**")
     st.caption(f"الطريقة: {prediction_method}")
@@ -248,6 +232,13 @@ if page == "الرئيسية":
     hidden_road2 = st.selectbox("الطريق المخفي الثاني", list(speed_data.keys())[1:], key="hr2")
     hidden_road2_pos = st.selectbox("موضع الطريق الثاني", ["L", "C", "R"], key="hr2p")
     
+    st.subheader("تحديد الطريق الأطول")
+    long_road_index = st.radio(
+        "أي طريق هو الأطول؟",
+        options=["المرئي", "المخفي الأول", "المخفي الثاني"],
+        key="long_road"
+    )
+    
     if st.button("Save This Race"):
         st.session_state.history.append({
             "Position": position,
@@ -255,6 +246,7 @@ if page == "الرئيسية":
             "Hidden_Road_1": hidden_road1,            "Hidden_Road_1_Position": hidden_road1_pos,
             "Hidden_Road_2": hidden_road2,
             "Hidden_Road_2_Position": hidden_road2_pos,
+            "Long_Road": long_road_index,
             "Car1": car1,
             "Car2": car2,
             "Car3": car3,
@@ -270,12 +262,12 @@ if page == "الرئيسية":
         st.markdown("---")
         st.subheader("سجل السباقات")
         display_df = pd.DataFrame(st.session_state.history)
-        if 'Hidden_Road_1_Position' in display_df.columns:
+        if 'Hidden_Road_1_Position' in display_df.columns and 'Long_Road' in display_df.columns:
             display_df['Hidden_Details'] = (
                 display_df['Hidden_Road_1'] + ' (' + display_df['Hidden_Road_1_Position'] + ') + ' +
                 display_df['Hidden_Road_2'] + ' (' + display_df['Hidden_Road_2_Position'] + ')'
             )
-            cols_to_show = ['Position', 'Road', 'Hidden_Details', 'Car1', 'Car2', 'Car3', 'Winner', 'Prediction']
+            cols_to_show = ['Position', 'Road', 'Hidden_Details', 'Long_Road', 'Car1', 'Car2', 'Car3', 'Winner', 'Prediction']
         else:
             cols_to_show = ['Position', 'Road', 'Car1', 'Car2', 'Car3', 'Winner', 'Prediction']
         
@@ -300,8 +292,8 @@ elif page == "نسبة الربح":
                 if row['Prediction'] == row['Winner']:
                     correct_predictions += 1
                     car_stats[row['Winner']]['correct_predictions'] += 1
-                car_stats[row['Winner']]['wins'] += 1
-                overall_accuracy = (correct_predictions / total_races) * 100 if total_races > 0 else 0
+                car_stats[row['Winner']]['wins'] += 1        
+        overall_accuracy = (correct_predictions / total_races) * 100 if total_races > 0 else 0
         
         st.metric("النسبة الإجمالية للربح", f"{overall_accuracy:.1f}%")
         st.progress(overall_accuracy / 100)
@@ -338,6 +330,6 @@ elif page == "نسبة الربح":
         st.markdown("### نصائح لتحسين الدقة:")
         st.info(
             "1. ركز على السيارات ذات النسبة المنخفضة (< 70%)\n"
-            "2. أكمل 50 جولة إضافية مع إدخال مواقع الطرق المخفية\\n"
-            "3. الطريق الطويل (46%) غالبًا في الموضع L — ركز على هذا النمط"
+            "2. أكمل 50 جولة إضافية مع تحديد الطريق الأطول بدقة\\n"
+            "3. الطريق الأطول قد يكون في أي موضع (L/C/R) — لا تفترض أنه دائمًا في L"
         )
