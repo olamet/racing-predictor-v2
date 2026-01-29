@@ -244,7 +244,8 @@ if page == "الرئيسية":
     with col1:
         position = st.selectbox("Visible Road Position", ["L", "C", "R"])
         road = st.selectbox("Visible Road Type", list(speed_data.keys())[1:])
-    with col2:        car1 = st.selectbox("Car 1", speed_data["Vehicle"])
+    with col2:
+        car1 = st.selectbox("Car 1", speed_data["Vehicle"])
         car2 = st.selectbox("Car 2", speed_data["Vehicle"])
         car3 = st.selectbox("Car 3", speed_data["Vehicle"])
     
