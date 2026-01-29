@@ -243,7 +243,8 @@ if page == "الرئيسية":
         prediction_method = f"الوقت (الطريق الأطول: {long_road})"
     
     st.success(f"التنبؤ: **{prediction}**")
-    st.caption(f"الطريقة: {prediction_method}")    st.caption(f"الطرق المخفية: {hidden_roads[0]} ({hidden_positions[0]}) + {hidden_roads[1]} ({hidden_positions[1]})")
+    st.caption(f"الطريقة: {prediction_method}")
+    st.caption(f"الطرق المخفية: {hidden_roads[0]} ({hidden_positions[0]}) + {hidden_roads[1]} ({hidden_positions[1]})")
     
     st.markdown("---")
     actual_winner = st.selectbox("Actual Winner", cars)
