@@ -96,7 +96,7 @@ if page == "الرئيسية":
     
     weight_map = {"L": 0.8, "C": 1.0, "R": 1.3}
     weight = weight_map[position]
-        hidden_roads_map = {
+    hidden_roads_map = {
         "expressway": ["highway", "bumpy"],
         "highway": ["expressway", "dirt"],
         "dirt": ["potholes", "desert"],
