@@ -491,7 +491,8 @@ elif page == "نسبة الربح":
             st.progress(accuracy / 100)
         
         st.markdown("---")
-        st.subheader("ملخص الأداء")        st.write(f"📊 إجمالي الجولات: {total_races}")
+        st.subheader("ملخص الأداء")
+        st.write(f"📊 إجمالي الجولات: {total_races}")
         st.write(f"✅ التنبؤات الصحيحة: {correct_predictions}")
         st.write(f"❌ التنبؤات الخاطئة: {total_races - correct_predictions}")
         
