@@ -442,7 +442,8 @@ elif page == "نسبة الربح":
         
         total_races = len(hist_df)
         correct_predictions = 0
-        car_stats = {}        for car in speed_data["Vehicle"]:
+        car_stats = {}
+        for car in speed_data["Vehicle"]:
             car_stats[car] = {"wins": 0, "correct_predictions": 0}
         
         for idx, row in hist_df.iterrows():
