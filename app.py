@@ -294,7 +294,8 @@ if page == "الرئيسية":
     hidden_road2 = st.selectbox("الطريق المخفي الثاني", ["expressway", "highway", "dirt", "potholes", "bumpy", "desert"], key="hr2")
     hidden_road2_pos = st.selectbox("موضع الطريق الثاني", ["L", "C", "R"], key="hr2p")
     
-    st.subheader("تحديد الطريق الأطول")    long_road_index = st.radio(
+    st.subheader("تحديد الطريق الأطول")
+    long_road_index = st.radio(
         "أي طريق هو الأطول؟",
         options=["المرئي", "المخفي الأول", "المخفي الثاني"],
         key="long_road"
