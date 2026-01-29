@@ -221,6 +221,7 @@ if uploaded_file is not None and 'upload_processed' not in st.session_state:
         if save_history():
             st.sidebar.success(f"✅ تم استعادة {len(restored_history)} سباق بنجاح!")
             st.sidebar.balloons()
+            st.experimental_memo.clear()
             st.rerun()
         else:
             st.sidebar.error("❌ فشل الحفظ في قاعدة البيانات")
