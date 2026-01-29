@@ -294,7 +294,6 @@ if page == "الرئيسية":
         else:
             cols_to_show = ['Position', 'Road', 'Car1', 'Car2', 'Car3', 'Winner', 'Prediction']
         st.dataframe(display_df[cols_to_show] if all(col in display_df.columns for col in cols_to_show) else display_df)
-        else display_df)
 
 elif page == "نسبة الربح":
     st.title("نسبة ربح التوقعات")
