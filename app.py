@@ -411,7 +411,7 @@ if page == "الرئيسية":
             "Prediction": prediction,
             "Prediction_Method": prediction_method
         })
-        if save_history():
+    if save_history():
             st.balloons()
             st.success(f"تم الحفظ! الإجمالي: {len(st.session_state.history)}")
         else:
