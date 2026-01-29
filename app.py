@@ -146,7 +146,7 @@ if page == "الرئيسية":
     hidden_roads = hidden_roads_map.get(road, ["dirt", "potholes"])
     hidden_positions = ["C", "C"]
         if st.session_state.history and len(st.session_state.history) > 20:
-        hist_temp = pd.DataFrame(st.session_state.history)
+            hist_temp = pd.DataFrame(st.session_state.history)
         if 'Hidden_Road_1' in hist_temp.columns and 'Hidden_Road_1_Position' in hist_temp.columns:
             road_matches = hist_temp[
                 (hist_temp['Road'] == road) & 
