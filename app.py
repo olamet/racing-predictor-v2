@@ -244,7 +244,8 @@ if page == "الرئيسية":
         combined_times = []
         
         for car in cars:
-            car_idx = ["Car", "Sport", "Super", "Bigbike", "Moto", "ORV", "SUV", "Truck", "ATV"].index(car)            speed_data = {
+            car_idx = ["Car", "Sport", "Super", "Bigbike", "Moto", "ORV", "SUV", "Truck", "ATV"].index(car)
+            speed_data = {
                 "expressway": [264, 432, 480, 264, 220.8, 286, 348, 240, 115.2],
                 "highway": [290.4, 480, 528, 230.4, 225.6, 240, 360, 276, 115.2],
                 "dirt": [153.6, 360, 264, 165.6, 144, 220.8, 336, 87.6, 187.2],
