@@ -96,7 +96,8 @@ def load_history():
             df = pd.read_csv(CSV_PATH)
             if 'Unnamed: 0' in df.columns:
                 df = df.drop(columns=['Unnamed: 0'])
-            return df.to_dict('records')    except:
+            return df.to_dict('records')
+            except:
         pass
     
     return []
