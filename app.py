@@ -209,7 +209,7 @@ if uploaded_file is not None:
         if save_history():
             st.sidebar.success(f"✅ تم استعادة {len(restored_history)} سباق!")
             st.sidebar.balloons()
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.sidebar.error("❌ فشل الحفظ في قاعدة البيانات")
     
