@@ -443,8 +443,8 @@ if page == "الرئيسية":
         else:
             st.error("فشل الحفظ! تأكد من الصلاحيات.")
         if st.session_state.history:
-        st.markdown("---")
-        st.subheader("سجل السباقات")
+            st.markdown("---")
+            st.subheader("سجل السباقات")
         display_df = pd.DataFrame(st.session_state.history)
         if 'Hidden_Road_1_Position' in display_df.columns and 'Long_Road' in display_df.columns:
             display_df['Hidden_Details'] = (
