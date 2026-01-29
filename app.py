@@ -414,7 +414,7 @@ if page == "الرئيسية":
     if save_history():
             st.balloons()
             st.success(f"تم الحفظ! الإجمالي: {len(st.session_state.history)}")
-        else:
+    else:
             st.error("فشل الحفظ! تأكد من الصلاحيات.")
     
     if st.session_state.history:
