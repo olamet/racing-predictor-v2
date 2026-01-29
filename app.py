@@ -395,7 +395,7 @@ if page == "الرئيسية":
         key="long_road"    )
     
     if st.button("Save This Race"):
-        st.session_state.history.append({
+    st.session_state.history.append({
             "Position": position,
             "Road": road,
             "Hidden_Road_1": hidden_road1,
