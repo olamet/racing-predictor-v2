@@ -195,7 +195,8 @@ if uploaded_file is not None:
         
         # حفظ البيانات
         if save_history():
-            st.sidebar.success(f"✅ تم استعادة {len(restored_history)} سباق!")            st.sidebar.balloons()
+            st.sidebar.success(f"✅ تم استعادة {len(restored_history)} سباق!")
+            st.sidebar.balloons()
             st.rerun()
         else:
             st.sidebar.error("❌ فشل الحفظ في قاعدة البيانات")
