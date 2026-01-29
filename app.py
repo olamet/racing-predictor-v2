@@ -292,7 +292,8 @@ if page == "الرئيسية":
     
     long_road = "المرئي"
     if st.session_state.history and len(st.session_state.history) > 20:
-        hist_temp = pd.DataFrame(st.session_state.history)        if 'Long_Road' in hist_temp.columns:
+        hist_temp = pd.DataFrame(st.session_state.history)
+        if 'Long_Road' in hist_temp.columns:
             road_matches = hist_temp[
                 (hist_temp['Road'] == road) & 
                 (hist_temp['Position'] == position)
@@ -341,7 +342,8 @@ if page == "الرئيسية":
                     time_hidden2 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed2
                 elif long_road == "المخفي الأول":
                     time_visible = ROAD_PERCENTAGES["short_hidden"] / visible_speed
-                    time_hidden1 = ROAD_PERCENTAGES["long_hidden"] / hidden_speed1                    time_hidden2 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed2
+                    time_hidden1 = ROAD_PERCENTAGES["long_hidden"] / hidden_speed1
+                    time_hidden2 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed2
                 else:  # المخفي الثاني
                     time_visible = ROAD_PERCENTAGES["short_hidden"] / visible_speed
                     time_hidden1 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed1
