@@ -1,44 +1,10 @@
 import streamlit as st
 import pandas as pd
-from supabase import create_client, Client
 import io
-
-# --- تهيئة Supabase ---
-try:
-    url: str = st.secrets["SUPABASE_URL"]
-    key: str = st.secrets["SUPABASE_KEY"]
-    supabase: Client = create_client(url, key)
-except Exception as e:
-    st.error(f"❌ خطأ في تهيئة Supabase: {str(e)}")
-    st.stop()
-
-# --- دالة تحميل البيانات من Supabase ---
-def load_history():
-    try:
-        response = supabase.table('races').select('*').execute()
-        if response.data:
-            # إزالة الحقل 'id' غير الضروري
-            return [{k: v for k, v in row.items() if k != 'id'} for row in response.data]
-        return []
-    except Exception as e:
-        st.sidebar.warning(f"⚠️ لم يتم تحميل البيانات: {str(e)}")
-        return []
-
-# --- دالة حفظ البيانات في Supabase ---
-def save_history():
-    try:
-        # حذف جميع السجلات القديمة
-        supabase.table('races').delete().neq('id', 0).execute()
-        # إدخال السجلات الجديدة
-        supabase.table('races').insert(st.session_state.history).execute()
-        return True
-    except Exception as e:
-        st.sidebar.error(f"❌ فشل الحفظ: {str(e)}")
-        return False
 
 # --- تهيئة التطبيق ---
 if 'history' not in st.session_state:
-    st.session_state.history = load_history()
+    st.session_state.history = []
 
 # --- الشريط الجانبي ---
 st.sidebar.title("Racing Predictor Pro")
@@ -48,15 +14,16 @@ page = st.sidebar.radio("اختر الصفحة", ["الرئيسية", "نسبة 
 st.sidebar.markdown("---")
 st.sidebar.subheader("📥 استعادة البيانات")
 uploaded_file = st.sidebar.file_uploader("ارفع ملف CSV", type=["csv"])
-if uploaded_file is not None and 'upload_processed' not in st.session_state:
+
+if uploaded_file is not None:
     try:
         df = pd.read_csv(uploaded_file)
         if 'Unnamed: 0' in df.columns:
             df = df.drop(columns=['Unnamed: 0'])
         
-        restored = []
+        # تحليل Hidden_Details إذا وجد
+        restored_history = []
         for _, row in df.iterrows():
-            # تحليل Hidden_Details
             h1, p1, h2, p2 = "dirt", "C", "potholes", "R"
             if 'Hidden_Details' in row and pd.notna(row['Hidden_Details']):
                 parts = str(row['Hidden_Details']).split('+')
@@ -69,7 +36,7 @@ if uploaded_file is not None and 'upload_processed' not in st.session_state:
                     except:
                         pass
             
-            restored.append({
+            restored_history.append({
                 "Position": row.get("Position", "C"),
                 "Road": row.get("Road", "expressway"),
                 "Hidden_Road_1": h1,
@@ -80,39 +47,35 @@ if uploaded_file is not None and 'upload_processed' not in st.session_state:
                 "Car1": row.get("Car1", "Car"),
                 "Car2": row.get("Car2", "Sport"),
                 "Car3": row.get("Car3", "Super"),
-                "Winner": row.get("Winner", "Car"),
-                "Prediction": row.get("Prediction", row.get("Car1", "Car")),
+                "Winner": row.get("Winner", "Car"),                "Prediction": row.get("Prediction", row.get("Car1", "Car")),
                 "Prediction_Method": row.get("Prediction_Method", "Restored")
             })
         
-        st.session_state.history = restored
-        st.session_state.upload_processed = True
-        
-        if save_history():
-            st.sidebar.success(f"✅ تم استعادة {len(restored)} سباق!")
-            st.sidebar.balloons()
-            st.rerun()
-        else:
-            st.sidebar.error("❌ فشل الحفظ")
+        st.session_state.history = restored_history
+        st.sidebar.success(f"✅ تم استعادة {len(restored_history)} سباق!")
+        st.sidebar.balloons()
+        st.rerun()
+    
     except Exception as e:
-        st.sidebar.error(f"❌ خطأ: {str(e)}")
+        st.sidebar.error(f"❌ خطأ في الرفع: {str(e)}")
+
 # --- زر تنزيل البيانات ---
 st.sidebar.markdown("---")
 st.sidebar.subheader("📤 تصدير البيانات")
 if st.sidebar.button("تنزيل CSV"):
     try:
-        df = pd.DataFrame(st.session_state.history)
-        csv = df.to_csv(index=False, encoding='utf-8-sig')
+        df_export = pd.DataFrame(st.session_state.history)
+        csv = df_export.to_csv(index=False, encoding='utf-8-sig')
         st.sidebar.download_button(
-            "⬇️ حمل الملف",
+            label="⬇️ اضغط لتنزيل الملف",
             data=csv,
-            file_name="racing_backup.csv",
+            file_name="racing_history_backup.csv",
             mime="text/csv"
         )
     except Exception as e:
-        st.sidebar.error(f"❌ خطأ: {str(e)}")
+        st.sidebar.error(f"❌ خطأ في التصدير: {str(e)}")
 
-# --- باقي الكود (الرئيسية ونسبة الربح) ---
+# --- باقي التطبيق (الرئيسية ونسبة الربح) ---
 if page == "الرئيسية":
     st.title("Racing Predictor Pro")
     st.markdown("تنبؤ ذكي مع تحديد الطريق الأطول بدقة")
@@ -133,8 +96,7 @@ if page == "الرئيسية":
     
     weight_map = {"L": 0.8, "C": 1.0, "R": 1.3}
     weight = weight_map[position]
-    
-    hidden_roads_map = {
+        hidden_roads_map = {
         "expressway": ["highway", "bumpy"],
         "highway": ["expressway", "dirt"],
         "dirt": ["potholes", "desert"],
@@ -145,6 +107,7 @@ if page == "الرئيسية":
     
     hidden_roads = hidden_roads_map.get(road, ["dirt", "potholes"])
     hidden_positions = ["C", "C"]
+    
     if st.session_state.history and len(st.session_state.history) > 20:
         hist_temp = pd.DataFrame(st.session_state.history)
         if 'Hidden_Road_1' in hist_temp.columns and 'Hidden_Road_1_Position' in hist_temp.columns:
@@ -182,8 +145,7 @@ if page == "الرئيسية":
     prediction_method = ""
     
     if st.session_state.history and len(st.session_state.history) > 20:
-        hist_df = pd.DataFrame(st.session_state.history)
-        
+        hist_df = pd.DataFrame(st.session_state.history)        
         similar_matches = hist_df[
             (hist_df['Position'] == position) &
             (hist_df['Road'] == road) &
@@ -232,8 +194,7 @@ if page == "الرئيسية":
                 else:
                     time_visible = 0.27 / visible_speed
                     time_hidden1 = 0.27 / hidden_speed1
-                    time_hidden2 = 0.46 / hidden_speed2
-                
+                    time_hidden2 = 0.46 / hidden_speed2                
                 total_time = time_visible + time_hidden1 + time_hidden2
                 
                 combined_times.append(total_time)
@@ -282,8 +243,7 @@ if page == "الرئيسية":
         prediction_method = f"الوقت (الطريق الأطول: {long_road})"
     
     st.success(f"التنبؤ: **{prediction}**")
-    st.caption(f"الطريقة: {prediction_method}")
-    st.caption(f"الطرق المخفية: {hidden_roads[0]} ({hidden_positions[0]}) + {hidden_roads[1]} ({hidden_positions[1]})")
+    st.caption(f"الطريقة: {prediction_method}")    st.caption(f"الطرق المخفية: {hidden_roads[0]} ({hidden_positions[0]}) + {hidden_roads[1]} ({hidden_positions[1]})")
     
     st.markdown("---")
     actual_winner = st.selectbox("Actual Winner", cars)
@@ -317,11 +277,8 @@ if page == "الرئيسية":
             "Prediction": prediction,
             "Prediction_Method": prediction_method
         })
-        if save_history():
-            st.balloons()
-            st.success(f"تم الحفظ! الإجمالي: {len(st.session_state.history)}")
-        else:
-            st.error("فشل الحفظ! تأكد من الصلاحيات.")
+        st.balloons()
+        st.success(f"تم الحفظ! الإجمالي: {len(st.session_state.history)}")
     
     if st.session_state.history:
         st.markdown("---")
@@ -335,8 +292,7 @@ if page == "الرئيسية":
             cols_to_show = ['Position', 'Road', 'Hidden_Details', 'Long_Road', 'Car1', 'Car2', 'Car3', 'Winner', 'Prediction']
         else:
             cols_to_show = ['Position', 'Road', 'Car1', 'Car2', 'Car3', 'Winner', 'Prediction']
-        
-        st.dataframe(display_df[cols_to_show] if all(col in display_df.columns for col in cols_to_show) else display_df)
+                st.dataframe(display_df[cols_to_show] if all(col in display_df.columns for col in cols_to_show) else display_df)
 
 elif page == "نسبة الربح":
     st.title("نسبة ربح التوقعات")
@@ -344,7 +300,8 @@ elif page == "نسبة الربح":
     if not st.session_state.history or len(st.session_state.history) < 10:
         st.warning(f"يجب أن يكون لديك 10 جولات على الأقل. لديك الآن: {len(st.session_state.history)}")
     else:
-        hist_df = pd.DataFrame(st.session_state.history)        
+        hist_df = pd.DataFrame(st.session_state.history)
+        
         total_races = len(hist_df)
         correct_predictions = 0
         car_stats = {}
@@ -384,8 +341,7 @@ elif page == "نسبة الربح":
         st.subheader("ملخص الأداء")
         st.write(f"📊 إجمالي الجولات: {total_races}")
         st.write(f"✅ التنبؤات الصحيحة: {correct_predictions}")
-        st.write(f"❌ التنبؤات الخاطئة: {total_races - correct_predictions}")
-        
+        st.write(f"❌ التنبؤات الخاطئة: {total_races - correct_predictions}")        
         if car_accuracy_list:
             best_car = car_accuracy_list[0]
             worst_car = car_accuracy_list[-1]
@@ -393,7 +349,8 @@ elif page == "نسبة الربح":
             st.write(f"⚠️ أسوأ سيارة في التنبؤ: **{worst_car[0]}** ({worst_car[1]:.1f}%)")
         
         st.markdown("### نصائح لتحسين الدقة:")
-        st.info(            "1. ركز على السيارات ذات النسبة المنخفضة (< 70%)\n"
+        st.info(
+            "1. ركز على السيارات ذات النسبة المنخفضة (< 70%)\n"
             "2. أكمل 50 جولة إضافية مع تحديد الطريق الأطول بدقة\\n"
             "3. الطريق الأطول قد يكون في أي موضع (L/C/R) — لا تفترض أنه دائمًا في L"
         )
