@@ -343,7 +343,8 @@ if page == "الرئيسية":
                 
                 if road in ["dirt", "potholes", "desert", "bumpy"]:
                     handling_factor = car_properties[car]["handling"]
-                    total_time *= (1.0 - handling_factor * 0.2)                else:
+                    total_time *= (1.0 - handling_factor * 0.2)
+                else:
                     power_factor = car_properties[car]["power"]
                     total_time *= (1.0 / power_factor)
                 
