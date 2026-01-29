@@ -344,7 +344,7 @@ if page == "الرئيسية":
         for car in cars:
             car_idx = speed_data["Vehicle"].index(car)
             visible_speed = speed_data[road][car_idx] * weight
-                        h1_weight = weight_map.get(hidden_positions[0], 1.0)
+            h1_weight = weight_map.get(hidden_positions[0], 1.0)
             h2_weight = weight_map.get(hidden_positions[1], 1.0)
             hidden_speed1 = speed_data[hidden_roads[0]][car_idx] * h1_weight
             hidden_speed2 = speed_data[hidden_roads[1]][car_idx] * h2_weight
