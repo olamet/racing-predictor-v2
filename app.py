@@ -96,7 +96,8 @@ def init_db():
             Prediction_Method TEXT
         )
     ''')
-    conn.commit()    conn.close()
+    conn.commit()
+    conn.close()
 
 def load_history():
     # محاولة التحميل من SQLite أولاً
