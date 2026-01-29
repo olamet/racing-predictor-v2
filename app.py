@@ -294,7 +294,8 @@ if page == "الرئيسية":
         
         if len(similar_matches) >= 1:
             win_counts = {}
-            for car in cars:                wins = len(similar_matches[similar_matches['Winner'] == car])
+            for car in cars:
+                wins = len(similar_matches[similar_matches['Winner'] == car])
                 win_counts[car] = wins
             
             prediction = max(win_counts, key=win_counts.get)
