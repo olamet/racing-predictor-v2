@@ -52,24 +52,27 @@ ROAD_PERCENTAGES = {
 
 # --- دالة تحليل Hidden_Details من الملفات القديمة ---
 def parse_hidden_details(hidden_str):
-    if not hidden_str or pd.isna(hidden_str):
-        return None, None, None, None
+    """تحويل 'expressway (L) + dirt (R)' إلى مكونات منفصلة"""
+    if not hidden_str or pd.isna(hidden_str) or hidden_str == "":
+        return "dirt", "C", "potholes", "R"
     try:
         parts = hidden_str.split('+')
         if len(parts) != 2:
-            return None, None, None, None
+            return "dirt", "C", "potholes", "R"
         
+        # تحليل الطريق الأول
         part1 = parts[0].strip()
         road1 = part1.split('(')[0].strip()
         pos1 = part1.split('(')[1].replace(')', '').strip() if '(' in part1 else "C"
         
+        # تحليل الطريق الثاني
         part2 = parts[1].strip()
         road2 = part2.split('(')[0].strip()
         pos2 = part2.split('(')[1].replace(')', '').strip() if '(' in part2 else "C"
         
         return road1, pos1, road2, pos2
     except:
-        return None, None, None, None
+        return "dirt", "C", "potholes", "R"
 
 # --- نظام التخزين: SQLite (الأولوية) + CSV احتياطي ---
 DB_PATH = 'racing.db'
@@ -93,8 +96,7 @@ def init_db():
             Car3 TEXT,
             Winner TEXT,
             Prediction TEXT,
-            Prediction_Method TEXT
-        )
+            Prediction_Method TEXT        )
     ''')
     conn.commit()
     conn.close()
@@ -107,7 +109,6 @@ def load_history():
         df = pd.read_sql_query("SELECT * FROM races", conn)
         conn.close()
         if not df.empty:
-            # تحويل DataFrame إلى قائمة قواميس
             return df.drop(columns=['id']).to_dict('records')
     except:
         pass
@@ -125,20 +126,35 @@ def load_history():
     return []
 
 def save_history():
+    if not st.session_state.history:
+        return False
+    
     # الحفظ في SQLite
     try:
         init_db()
         conn = sqlite3.connect(DB_PATH)
         df = pd.DataFrame(st.session_state.history)
+        
         # إضافة أعمدة افتراضية إذا كانت مفقودة
-        for col in ['Hidden_Road_1', 'Hidden_Road_1_Position', 'Hidden_Road_2', 'Hidden_Road_2_Position', 'Long_Road']:
+        required_columns = {
+            'Hidden_Road_1': 'dirt',
+            'Hidden_Road_1_Position': 'C',
+            'Hidden_Road_2': 'potholes',
+            'Hidden_Road_2_Position': 'R',
+            'Long_Road': 'المرئي'
+        }
+        for col, default_val in required_columns.items():
             if col not in df.columns:
-                df[col] = "C" if "Position" in col else "dirt" if "Road" in col else "المرئي"
+                df[col] = default_val        
+        # التأكد من وجود جميع الأعمدة المطلوبة
+        df = df[[col for col in required_columns.keys() if col in df.columns] + 
+                [c for c in df.columns if c not in required_columns.keys()]]
+        
         df.to_sql('races', conn, if_exists='replace', index=False)
         conn.close()
         return True
     except Exception as e:
-        st.sidebar.warning(f"⚠️ SQLite error: {str(e)}")
+        print(f"SQLite error: {str(e)}")
     
     # إذا فشل SQLite، الحفظ في CSV احتياطيًا
     try:
@@ -147,11 +163,12 @@ def save_history():
         return True
     except:
         return False
+
 # --- تهيئة التطبيق ---
 if 'history' not in st.session_state:
     st.session_state.history = load_history()
 
-# --- الشريط الجانبي (يحتوي على أدوات الاستعادة والتصدير) ---
+# --- الشريط الجانبي ---
 st.sidebar.title("Racing Predictor Pro")
 page = st.sidebar.radio("اختر الصفحة", ["الرئيسية", "نسبة الربح"])
 
@@ -160,7 +177,7 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("📥 استعادة البيانات")
 uploaded_file = st.sidebar.file_uploader("ارفع ملف CSV", type=["csv"])
 
-if uploaded_file is not None:
+if uploaded_file is not None and 'upload_processed' not in st.session_state:
     try:
         temp_df = pd.read_csv(uploaded_file)
         if 'Unnamed: 0' in temp_df.columns:
@@ -168,46 +185,41 @@ if uploaded_file is not None:
         
         restored_history = []
         for _, row in temp_df.iterrows():
-            # التحقق من هيكل الملف (جديد أم قديم)
-            if 'Hidden_Road_1' in row and pd.notna(row['Hidden_Road_1']):
-                # هيكل جديد (بدون حاجة لتحليل)
-                record = {
-                    "Position": row.get("Position", "C"),
-                    "Road": row.get("Road", "expressway"),
-                    "Hidden_Road_1": row.get("Hidden_Road_1", "dirt"),
-                    "Hidden_Road_1_Position": row.get("Hidden_Road_1_Position", "C"),
-                    "Hidden_Road_2": row.get("Hidden_Road_2", "potholes"),
-                    "Hidden_Road_2_Position": row.get("Hidden_Road_2_Position", "C"),
-                    "Long_Road": row.get("Long_Road", "المرئي"),
-                    "Car1": row.get("Car1", "Car"),
-                    "Car2": row.get("Car2", "Sport"),
-                    "Car3": row.get("Car3", "Super"),
-                    "Winner": row.get("Winner", "Car"),
-                    "Prediction": row.get("Prediction", "Car"),
-                    "Prediction_Method": row.get("Prediction_Method", "Restored")
-                }
-            else:
-                # هيكل قديم (يحتوي على Hidden_Details)
-                h1, p1, h2, p2 = parse_hidden_details(row.get('Hidden_Details', ''))
-                record = {
-                    "Position": row.get("Position", "C"),
-                    "Road": row.get("Road", "expressway"),
-                    "Hidden_Road_1": h1 or "dirt",
-                    "Hidden_Road_1_Position": p1 or "C",
-                    "Hidden_Road_2": h2 or "potholes",
-                    "Hidden_Road_2_Position": p2 or "C",                    "Long_Road": row.get("Long_Road", "المرئي"),
-                    "Car1": row.get("Car1", "Car"),
-                    "Car2": row.get("Car2", "Sport"),
-                    "Car3": row.get("Car3", "Super"),
-                    "Winner": row.get("Winner", "Car"),
-                    "Prediction": row.get("Prediction", "Car"),
-                    "Prediction_Method": row.get("Prediction_Method", "Restored")
-                }
+            # تحليل Hidden_Details للحصول على الطرق والمواقع
+            h1, p1, h2, p2 = parse_hidden_details(row.get('Hidden_Details', ''))
+            
+            # تحديد Long_Road مع قيمة افتراضية ذكية
+            long_road_val = row.get("Long_Road", "")
+            if pd.isna(long_road_val) or long_road_val == "":
+                # افتراضي ذكي: إذا كان الموضع C، الطريق الأطول غالبًا المرئي
+                if row.get("Position") == "C":
+                    long_road_val = "المرئي"
+                else:                    long_road_val = "المخفي الأول"
+            
+            record = {
+                "Position": row.get("Position", "C"),
+                "Road": row.get("Road", "expressway"),
+                "Hidden_Road_1": h1,
+                "Hidden_Road_1_Position": p1,
+                "Hidden_Road_2": h2,
+                "Hidden_Road_2_Position": p2,
+                "Long_Road": long_road_val,
+                "Car1": row.get("Car1", "Car"),
+                "Car2": row.get("Car2", "Sport"),
+                "Car3": row.get("Car3", "Super"),
+                "Winner": row.get("Winner", "Car"),
+                "Prediction": row.get("Prediction", row.get("Car1", "Car")),
+                "Prediction_Method": row.get("Prediction_Method", "Restored")
+            }
             restored_history.append(record)
         
+        # تحديث البيانات في الذاكرة
         st.session_state.history = restored_history
+        st.session_state.upload_processed = True  # لمنع إعادة المعالجة
+        
+        # حفظ البيانات
         if save_history():
-            st.sidebar.success(f"✅ تم استعادة {len(restored_history)} سباق!")
+            st.sidebar.success(f"✅ تم استعادة {len(restored_history)} سباق بنجاح!")
             st.sidebar.balloons()
             st.rerun()
         else:
@@ -232,11 +244,8 @@ if st.sidebar.button("تنزيل CSV"):
         )
     except Exception as e:
         st.sidebar.error(f"❌ خطأ في التصدير: {str(e)}")
-
 # --- باقي التطبيق (الرئيسية ونسبة الربح) ---
 if page == "الرئيسية":
-    # ... (نفس الكود السابق للتنبؤ وإدخال البيانات) ...
-    # [سأختصره هنا لعدم التكرار، لكنه موجود كاملاً في الكود الكامل المرفق]
     st.title("Racing Predictor Pro")
     st.markdown("تنبؤ ذكي مع تحديد الطريق الأطول بدقة")
     
@@ -283,8 +292,7 @@ if page == "الرئيسية":
     
     long_road = "المرئي"
     if st.session_state.history and len(st.session_state.history) > 20:
-        hist_temp = pd.DataFrame(st.session_state.history)
-        if 'Long_Road' in hist_temp.columns:
+        hist_temp = pd.DataFrame(st.session_state.history)        if 'Long_Road' in hist_temp.columns:
             road_matches = hist_temp[
                 (hist_temp['Road'] == road) & 
                 (hist_temp['Position'] == position)
@@ -294,7 +302,8 @@ if page == "الرئيسية":
                 if not mode_series.empty:
                     long_road = mode_series.iloc[0]
     
-    prediction_method = ""    
+    prediction_method = ""
+    
     if st.session_state.history and len(st.session_state.history) > 20:
         hist_df = pd.DataFrame(st.session_state.history)
         
@@ -332,9 +341,8 @@ if page == "الرئيسية":
                     time_hidden2 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed2
                 elif long_road == "المخفي الأول":
                     time_visible = ROAD_PERCENTAGES["short_hidden"] / visible_speed
-                    time_hidden1 = ROAD_PERCENTAGES["long_hidden"] / hidden_speed1
-                    time_hidden2 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed2
-                else:
+                    time_hidden1 = ROAD_PERCENTAGES["long_hidden"] / hidden_speed1                    time_hidden2 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed2
+                else:  # المخفي الثاني
                     time_visible = ROAD_PERCENTAGES["short_hidden"] / visible_speed
                     time_hidden1 = ROAD_PERCENTAGES["short_hidden"] / hidden_speed1
                     time_hidden2 = ROAD_PERCENTAGES["long_hidden"] / hidden_speed2
@@ -382,8 +390,7 @@ if page == "الرئيسية":
             if road in ["dirt", "potholes", "desert", "bumpy"]:
                 handling_factor = car_properties[car]["handling"]
                 total_time *= (1.0 - handling_factor * 0.2)
-            else:
-                power_factor = car_properties[car]["power"]
+            else:                power_factor = car_properties[car]["power"]
                 total_time *= (1.0 / power_factor)
             
             combined_times.append(total_time)
@@ -393,7 +400,8 @@ if page == "الرئيسية":
     
     st.success(f"التنبؤ: **{prediction}**")
     st.caption(f"الطريقة: {prediction_method}")
-    st.caption(f"الطرق المخفية: {hidden_roads[0]} ({hidden_positions[0]}) + {hidden_roads[1]} ({hidden_positions[1]})")    
+    st.caption(f"الطرق المخفية: {hidden_roads[0]} ({hidden_positions[0]}) + {hidden_roads[1]} ({hidden_positions[1]})")
+    
     st.markdown("---")
     actual_winner = st.selectbox("Actual Winner", cars)
     
@@ -431,8 +439,7 @@ if page == "الرئيسية":
             st.success(f"تم الحفظ! الإجمالي: {len(st.session_state.history)}")
         else:
             st.error("فشل الحفظ! تأكد من الصلاحيات.")
-    
-    if st.session_state.history:
+        if st.session_state.history:
         st.markdown("---")
         st.subheader("سجل السباقات")
         display_df = pd.DataFrame(st.session_state.history)
@@ -442,12 +449,12 @@ if page == "الرئيسية":
                 display_df['Hidden_Road_2'] + ' (' + display_df['Hidden_Road_2_Position'] + ')'
             )
             cols_to_show = ['Position', 'Road', 'Hidden_Details', 'Long_Road', 'Car1', 'Car2', 'Car3', 'Winner', 'Prediction']
-        else:            cols_to_show = ['Position', 'Road', 'Car1', 'Car2', 'Car3', 'Winner', 'Prediction']
+        else:
+            cols_to_show = ['Position', 'Road', 'Car1', 'Car2', 'Car3', 'Winner', 'Prediction']
         
         st.dataframe(display_df[cols_to_show] if all(col in display_df.columns for col in cols_to_show) else display_df)
 
 elif page == "نسبة الربح":
-    # ... (نفس الكود السابق لحساب النسبة) ...
     st.title("نسبة ربح التوقعات")
     
     if not st.session_state.history or len(st.session_state.history) < 10:
@@ -481,8 +488,7 @@ elif page == "نسبة الربح":
         for car, stats in car_stats.items():
             if stats['wins'] > 0:
                 accuracy = (stats['correct_predictions'] / stats['wins']) * 100
-                car_accuracy_list.append((car, accuracy, stats['wins'], stats['correct_predictions']))
-        
+                car_accuracy_list.append((car, accuracy, stats['wins'], stats['correct_predictions']))        
         car_accuracy_list.sort(key=lambda x: (-x[1], -x[2]))
         
         for car, accuracy, total_wins, correct in car_accuracy_list:
